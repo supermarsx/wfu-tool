@@ -80,14 +80,14 @@ function Get-WuBranch {
         17134 { return 'rs4_release' }
         17763 { return 'rs5_release' }
         17784 { return 'rs5_release_svc_hci' }
-        { $_ -in 18362,18363 } { return '19h1_release' }
-        { $_ -in 19041,19042,19043,19044,19045,19046 } { return 'vb_release' }
+        { $_ -in 18362, 18363 } { return '19h1_release' }
+        { $_ -in 19041, 19042, 19043, 19044, 19045, 19046 } { return 'vb_release' }
         20279 { return 'fe_release_10x' }
-        { $_ -in 20348,20349 } { return 'fe_release' }
+        { $_ -in 20348, 20349 } { return 'fe_release' }
         22000 { return 'co_release' }
-        { $_ -in 22621,22631,22635 } { return 'ni_release' }
+        { $_ -in 22621, 22631, 22635 } { return 'ni_release' }
         25398 { return 'zn_release' }
-        { $_ -in 26100,26120,26200 } { return 'ge_release' }
+        { $_ -in 26100, 26120, 26200 } { return 'ge_release' }
         28000 { return 'br_release' }
         default { return 'rs_prerelease' }
     }
@@ -277,7 +277,7 @@ function New-WuSyncUpdatesRequest {
     $callerAttribs = [System.Net.WebUtility]::HtmlEncode('E:Profile=AUv2&Acquisition=1&Interactive=1&IsSeeker=1&SheddingAware=1&Id=MoUpdateOrchestrator')
 
     # InstalledNonLeafUpdateIDs -- required magic numbers from the upstream source snapshot
-    $installedIds = @(1,10,105939029,105995585,106017178,107825194,10809856,11,117765322,129905029,130040030,130040031,130040032,130040033,133399034,138372035,138372036,139536037,139536038,139536039,139536040,142045136,158941041,158941042,158941043,158941044,159776047,160733048,160733049,160733050,160733051,160733055,160733056,161870057,161870058,161870059,17,19,2,23110993,23110994,23110995,23110996,23110999,23111000,23111001,23111002,23111003,23111004,2359974,2359977,24513870,28880263,296374060,3,30077688,30486944,5143990,5169043,5169044,5169047,59830006,59830007,59830008,60484010,62450018,62450019,62450020,69801474,8788830,8806526,9125350,9154769,98959022,98959023,98959024,98959025,98959026)
+    $installedIds = @(1, 10, 105939029, 105995585, 106017178, 107825194, 10809856, 11, 117765322, 129905029, 130040030, 130040031, 130040032, 130040033, 133399034, 138372035, 138372036, 139536037, 139536038, 139536039, 139536040, 142045136, 158941041, 158941042, 158941043, 158941044, 159776047, 160733048, 160733049, 160733050, 160733051, 160733055, 160733056, 161870057, 161870058, 161870059, 17, 19, 2, 23110993, 23110994, 23110995, 23110996, 23110999, 23111000, 23111001, 23111002, 23111003, 23111004, 2359974, 2359977, 24513870, 28880263, 296374060, 3, 30077688, 30486944, 5143990, 5169043, 5169044, 5169047, 59830006, 59830007, 59830008, 60484010, 62450018, 62450019, 62450020, 69801474, 8788830, 8806526, 9125350, 9154769, 98959022, 98959023, 98959024, 98959025, 98959026)
     $idsXml = ($installedIds | ForEach-Object { "                    <int>$_</int>" }) -join "`n"
 
     return @"
@@ -417,7 +417,8 @@ function Send-WuSoapRequest {
             StatusCode = $response.StatusCode
             Content    = [System.Net.WebUtility]::HtmlDecode($response.Content)
         }
-    } catch {
+    }
+    catch {
         return @{
             StatusCode = 0
             Content    = $null
@@ -631,7 +632,8 @@ function Get-WuFileUrls {
             # Extract filename from URL
             $fileName = if ($url -match '/([^/?]+)(?:\?|$)') {
                 [System.Uri]::UnescapeDataString($matches[1])
-            } else {
+            }
+            else {
                 'unknown'
             }
 
@@ -668,7 +670,8 @@ function Convert-WuFileDigestToSha1 {
         if ($bytes.Length -eq 20) {
             return ([System.BitConverter]::ToString($bytes).Replace('-', '')).ToLower()
         }
-    } catch {
+    }
+    catch {
     }
 
     return $null
@@ -682,11 +685,11 @@ function Get-WindowsFeatureTargetSpec {
     param([string]$TargetVersion)
 
     $specs = @{
-        '25H2'     = @{ Version = '25H2';     FromBuild = '10.0.26100.1'; TargetBuild = 26200; OS = 'Windows 11' }
-        '24H2'     = @{ Version = '24H2';     FromBuild = '10.0.22631.1'; TargetBuild = 26100; OS = 'Windows 11' }
-        '23H2'     = @{ Version = '23H2';     FromBuild = '10.0.22621.1'; TargetBuild = 22631; OS = 'Windows 11' }
-        '22H2'     = @{ Version = '22H2';     FromBuild = '10.0.22000.1'; TargetBuild = 22621; OS = 'Windows 11' }
-        '21H2'     = @{ Version = '21H2';     FromBuild = '10.0.19045.1'; TargetBuild = 22000; OS = 'Windows 11' }
+        '25H2'     = @{ Version = '25H2'; FromBuild = '10.0.26100.1'; TargetBuild = 26200; OS = 'Windows 11' }
+        '24H2'     = @{ Version = '24H2'; FromBuild = '10.0.22631.1'; TargetBuild = 26100; OS = 'Windows 11' }
+        '23H2'     = @{ Version = '23H2'; FromBuild = '10.0.22621.1'; TargetBuild = 22631; OS = 'Windows 11' }
+        '22H2'     = @{ Version = '22H2'; FromBuild = '10.0.22000.1'; TargetBuild = 22621; OS = 'Windows 11' }
+        '21H2'     = @{ Version = '21H2'; FromBuild = '10.0.19045.1'; TargetBuild = 22000; OS = 'Windows 11' }
         'W10_22H2' = @{ Version = 'W10_22H2'; FromBuild = '10.0.19044.1'; TargetBuild = 19045; OS = 'Windows 10' }
         'W10_21H2' = @{ Version = 'W10_21H2'; FromBuild = '10.0.19043.1'; TargetBuild = 19044; OS = 'Windows 10' }
     }
@@ -736,8 +739,8 @@ function Select-WindowsFeatureUpdate {
     }
 
     return ($scored |
-        Sort-Object -Property @{ Expression = 'Score'; Descending = $true }, @{ Expression = 'FoundBuild'; Descending = $true } |
-        Select-Object -First 1).Update
+            Sort-Object -Property @{ Expression = 'Score'; Descending = $true }, @{ Expression = 'FoundBuild'; Descending = $true } |
+            Select-Object -First 1).Update
 }
 
 function Get-WindowsFeatureReleaseInfo {
@@ -806,15 +809,15 @@ function Get-WindowsFeatureFiles {
     $edition = $Edition.ToLower()
     $esdFiles = @(
         $files |
-        Where-Object { $_.FileName -match '\.esd(?:$|\?)' } |
-        ForEach-Object {
-            @{
-                Name = [string]$_.FileName
-                Url  = [string]$_.Url
-                Sha1 = Convert-WuFileDigestToSha1 -Digest ([string]$_.Digest)
-                Size = [long]$_.Size
+            Where-Object { $_.FileName -match '\.esd(?:$|\?)' } |
+            ForEach-Object {
+                @{
+                    Name = [string]$_.FileName
+                    Url  = [string]$_.Url
+                    Sha1 = Convert-WuFileDigestToSha1 -Digest ([string]$_.Digest)
+                    Size = [long]$_.Size
+                }
             }
-        }
     )
 
     if ($esdFiles.Count -eq 0) {
