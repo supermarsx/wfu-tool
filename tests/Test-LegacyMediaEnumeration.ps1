@@ -35,6 +35,10 @@ function Invoke-LegacyEnumeration {
 function Unwrap-LegacyEnumerationItem {
     param($Item)
 
+    if ($Item -is [string]) {
+        return $Item
+    }
+
     foreach ($propName in @('Value', 'Item', 'Release', 'Descriptor')) {
         if ($Item.PSObject.Properties.Name -contains $propName) {
             $candidate = $Item.$propName
@@ -88,6 +92,10 @@ $expectedVersions = @(
 
 $versionValues = foreach ($item in $items) {
     $item = Unwrap-LegacyEnumerationItem -Item $item
+    if ($item -is [string]) {
+        [string]$item
+        continue
+    }
     foreach ($propName in @('VersionId', 'Version', 'Id', 'Name')) {
         if ($item.PSObject.Properties.Name -contains $propName) {
             [string]$item.$propName
@@ -95,6 +103,7 @@ $versionValues = foreach ($item in $items) {
         }
     }
 }
+$versionValues = @($versionValues | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
 Assert-True ($versionValues.Count -ge $expectedVersions.Count) "Legacy enumeration: has at least $($expectedVersions.Count) versions ($($versionValues.Count))"
 

@@ -103,7 +103,10 @@ Assert-True ($entries.Count -ge $expectedVersions.Count) "Legacy manifest: has a
 
 foreach ($version in $expectedVersions) {
     $entry = $entries | Where-Object {
-        $_.Version -eq $version -or $_.VersionId -eq $version -or $_.Id -eq $version -or $_.Name -eq $version
+        (($_.PSObject.Properties.Name -contains 'Version') -and $_.Version -eq $version) -or
+        (($_.PSObject.Properties.Name -contains 'VersionId') -and $_.VersionId -eq $version) -or
+        (($_.PSObject.Properties.Name -contains 'Id') -and $_.Id -eq $version) -or
+        (($_.PSObject.Properties.Name -contains 'Name') -and $_.Name -eq $version)
     } | Select-Object -First 1
 
     $entry = Unwrap-LegacyEntry -Entry $entry

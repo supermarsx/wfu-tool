@@ -9,9 +9,9 @@ $expectedVersions = @(
 )
 
 $legacyManifestCommand = @(
-    'Get-LegacyMediaVersions',
     'Get-LegacyMediaManifest',
     'Get-LegacyMediaReleaseSpecs'
+    'Get-LegacyMediaVersions'
 ) | ForEach-Object { Get-Command $_ -ErrorAction SilentlyContinue } | Select-Object -First 1
 
 $legacySpecCommand = Get-Command 'Get-LegacyMediaReleaseSpec' -ErrorAction SilentlyContinue
@@ -41,9 +41,9 @@ function Get-LegacyEntry {
     }
 
     return $collection | Where-Object {
-        $_.Version -eq $Version -or
-        $_.VersionId -eq $Version -or
-        $_.Name -eq $Version
+        (($_.PSObject.Properties.Name -contains 'Version') -and $_.Version -eq $Version) -or
+        (($_.PSObject.Properties.Name -contains 'VersionId') -and $_.VersionId -eq $Version) -or
+        (($_.PSObject.Properties.Name -contains 'Name') -and $_.Name -eq $Version)
     } | Select-Object -First 1
 }
 
@@ -66,6 +66,9 @@ foreach ($version in $expectedVersions) {
     } else {
         $entry = Get-LegacyEntry -Manifest $manifest -Version $version
     }
+    if (($entry -is [string]) -and $legacySpecCommand) {
+        $entry = & $legacySpecCommand -Version $entry
+    }
     Assert-NotNull $entry "LegacyMedia[$version]: Entry exists"
 
     if ($entry) {
@@ -75,6 +78,8 @@ foreach ($version in $expectedVersions) {
         $sourceFields = @(
             'ProductsCabUrl',
             'ProductsXmlUrl',
+            'MctUrl',
+            'MctUrl32',
             'MctExeUrl',
             'CatalogUrl',
             'SourceUrl',
