@@ -21,7 +21,8 @@ try {
     $Host.UI.RawUI.BufferSize = $buf
     $win = New-Object System.Management.Automation.Host.Size(120, 50)
     $Host.UI.RawUI.WindowSize = $win
-} catch {
+}
+catch {
     try { & mode.com con: cols=120 lines=50 } catch { }
 }
 
@@ -41,7 +42,8 @@ function Get-RegistryValueSafe {
         $item = Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue
         if ($null -eq $item) { return $null }
         return $item.GetValue($Name, $null)
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -69,7 +71,8 @@ function Get-CheckpointPayload {
         }
 
         return (Get-Content -Path $Path -Raw | ConvertFrom-Json -AsHashtable)
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -82,15 +85,15 @@ function Resolve-ResumeState {
     )
 
     $state = [ordered]@{
-        CheckpointPath     = $null
-        SessionId          = $null
-        TargetVersion      = $null
-        LogPath            = $null
-        DownloadPath       = $null
-        ConfigPath         = $null
-        NoReboot           = $false
+        CheckpointPath       = $null
+        SessionId            = $null
+        TargetVersion        = $null
+        LogPath              = $null
+        DownloadPath         = $null
+        ConfigPath           = $null
+        NoReboot             = $false
         ResumeFromCheckpoint = $false
-        Payload            = $null
+        Payload              = $null
     }
 
     $storedCheckpointPath = $null
@@ -112,7 +115,8 @@ function Resolve-ResumeState {
             $storedDownloadPath = Get-RegistryValueSafe $regKey 'DownloadPath'
             $storedResumeFlag = Get-RegistryValueSafe $regKey 'ResumeFromCheckpoint'
         }
-    } catch { }
+    }
+    catch { }
 
     $state.CheckpointPath = if ($ExplicitCheckpointPath) { $ExplicitCheckpointPath } elseif ($storedCheckpointPath) { $storedCheckpointPath } else { $null }
     $state.SessionId = if ($ExplicitSessionId) { $ExplicitSessionId } elseif ($storedSessionId) { $storedSessionId } else { $null }
@@ -139,7 +143,8 @@ function Resolve-ResumeState {
         }
         if ($payload.CurrentVersion) { $state.CurrentVersion = [string]$payload.CurrentVersion }
         if ($payload.NextStep) { $state.NextStep = [string]$payload.NextStep }
-    } else {
+    }
+    else {
         if ($storedTargetVersion) { $state.TargetVersion = [string]$storedTargetVersion }
         if ($storedLogPath) { $state.LogPath = [string]$storedLogPath }
         if ($storedDownloadPath) { $state.DownloadPath = [string]$storedDownloadPath }
@@ -159,7 +164,8 @@ Write-Host ''
 # Wait a bit for services to stabilize after boot
 if ($env:WFU_TOOL_TEST_MODE -eq '1') {
     Write-Status 'WFU_TOOL_TEST_MODE detected -- skipping post-boot wait.' DarkGray
-} else {
+}
+else {
     Write-Status 'Waiting 15 seconds for system services to stabilize...' DarkGray
     Start-Sleep -Seconds 15
 }
@@ -173,7 +179,8 @@ if ([string]::IsNullOrEmpty($ScriptRoot)) {
             $savedPath = (Get-ItemProperty $regKey -ErrorAction SilentlyContinue).ScriptRoot
             if ($savedPath -and (Test-Path $savedPath)) { $ScriptRoot = $savedPath }
         }
-    } catch { }
+    }
+    catch { }
 }
 
 if ([string]::IsNullOrEmpty($ScriptRoot) -or -not (Test-Path $ScriptRoot)) {
@@ -223,12 +230,12 @@ if (-not $DownloadPath -and $resumeState.DownloadPath) {
 $params = @{
     Mode = 'Resume'
 }
-if ($TargetVersion)          { $params['TargetVersion'] = $TargetVersion }
-if ($LogPath)                { $params['LogPath'] = $LogPath }
-if ($DownloadPath)           { $params['DownloadPath'] = $DownloadPath }
+if ($TargetVersion) { $params['TargetVersion'] = $TargetVersion }
+if ($LogPath) { $params['LogPath'] = $LogPath }
+if ($DownloadPath) { $params['DownloadPath'] = $DownloadPath }
 if ($NoReboot -or $resumeState.NoReboot) { $params['NoReboot'] = $true }
 if ($resumeState.CheckpointPath) { $params['CheckpointPath'] = $resumeState.CheckpointPath }
-if ($resumeState.SessionId)  { $params['SessionId'] = $resumeState.SessionId }
+if ($resumeState.SessionId) { $params['SessionId'] = $resumeState.SessionId }
 if ($resumeState.ResumeFromCheckpoint) { $params['ResumeFromCheckpoint'] = $true }
 if ($resumeState.ConfigPath) { $params['ConfigPath'] = $resumeState.ConfigPath }
 
@@ -239,7 +246,8 @@ Write-Host ''
 try {
     Set-ExecutionPolicy -Scope Process -Force Bypass -ErrorAction SilentlyContinue
     & $upgradeScript @params
-} catch {
+}
+catch {
     Write-Status "ERROR: $($_.Exception.Message)" Red
 }
 

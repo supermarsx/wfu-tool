@@ -9,7 +9,7 @@ param(
     [Alias('?')]
     [switch]$Help,
     [string]$ConfigPath,
-    [ValidateSet('Interactive','IsoDownload','UsbFromIso','AutomatedUpgrade','Resume','Headless','CreateUsb','createusb','create_usb')]
+    [ValidateSet('Interactive', 'IsoDownload', 'UsbFromIso', 'AutomatedUpgrade', 'Resume', 'Headless', 'CreateUsb', 'createusb', 'create_usb')]
     [string]$Mode = 'Interactive',
     [switch]$Interactive,
     [switch]$Headless,
@@ -152,7 +152,8 @@ public class ScreenInfo {
         $newY = 0
         [void][ScreenInfo]::MoveWindow($hwnd, $newX, $newY, $winW, $usableH, $true)
     }
-} catch {
+}
+catch {
     try { & mode.com con: cols=120 lines=50 } catch { }
 }
 
@@ -195,7 +196,7 @@ function Write-Separator {
 
 function Show-Spinner {
     param([string]$Message, [int]$Seconds = 2)
-    $spinChars = @('|','/','-','\')
+    $spinChars = @('|', '/', '-', '\')
     $end = (Get-Date).AddSeconds($Seconds)
     $i = 0
     while ((Get-Date) -lt $end) {
@@ -232,7 +233,8 @@ function Show-ToggleMenu {
             Write-Color "$($item.Name)" $color -NoNewLine
             if ($item.Description) {
                 Write-Color "  $($item.Description)" DarkGray
-            } else {
+            }
+            else {
                 Write-Host ""
             }
         }
@@ -249,13 +251,16 @@ function Show-ToggleMenu {
 
         if ([string]::IsNullOrWhiteSpace($key)) {
             $done = $true
-        } elseif ($key -match '^[aA]$') {
+        }
+        elseif ($key -match '^[aA]$') {
             foreach ($item in $Items) { $item.Enabled = $true }
             Write-Host ""
-        } elseif ($key -match '^[nN]$') {
+        }
+        elseif ($key -match '^[nN]$') {
             foreach ($item in $Items) { $item.Enabled = $false }
             Write-Host ""
-        } else {
+        }
+        else {
             # Parse number(s) -- supports "1", "13", "1 3", "1,3"
             $nums = [regex]::Matches($key, '\d+') | ForEach-Object { [int]$_.Value }
             foreach ($n in $nums) {
@@ -288,38 +293,38 @@ function Normalize-LauncherMode {
     if (-not $Mode) { return 'Interactive' }
 
     switch ($Mode.Trim().ToLowerInvariant()) {
-        'interactive'      { return 'Interactive' }
-        'isodownload'      { return 'IsoDownload' }
-        'usbfromiso'       { return 'UsbFromIso' }
+        'interactive' { return 'Interactive' }
+        'isodownload' { return 'IsoDownload' }
+        'usbfromiso' { return 'UsbFromIso' }
         'automatedupgrade' { return 'AutomatedUpgrade' }
-        'resume'           { return 'Resume' }
-        'headless'         { return 'AutomatedUpgrade' }
-        'createusb'        { return 'UsbFromIso' }
-        'create_usb'       { return 'UsbFromIso' }
-        default            { return 'Interactive' }
+        'resume' { return 'Resume' }
+        'headless' { return 'AutomatedUpgrade' }
+        'createusb' { return 'UsbFromIso' }
+        'create_usb' { return 'UsbFromIso' }
+        default { return 'Interactive' }
     }
 }
 
 function Get-LauncherModeChoices {
     @(
         [pscustomobject]@{
-            Id = 'Interactive'
-            Label = 'Interactive'
+            Id          = 'Interactive'
+            Label       = 'Interactive'
             Description = 'guided prompts, current behavior'
         }
         [pscustomobject]@{
-            Id = 'IsoDownload'
-            Label = 'Just download ISO'
+            Id          = 'IsoDownload'
+            Label       = 'Just download ISO'
             Description = 'download or reuse an ISO and stop after media acquisition'
         }
         [pscustomobject]@{
-            Id = 'UsbFromIso'
-            Label = 'Download/use ISO and make USB drive'
+            Id          = 'UsbFromIso'
+            Label       = 'Download/use ISO and make USB drive'
             Description = 'reuse an existing ISO or download one, then write bootable USB media'
         }
         [pscustomobject]@{
-            Id = 'AutomatedUpgrade'
-            Label = 'Automated in-place upgrade'
+            Id          = 'AutomatedUpgrade'
+            Label       = 'Automated in-place upgrade'
             Description = 'unattended upgrade flow'
         }
     )
@@ -346,11 +351,14 @@ function Select-LauncherMode {
         $input = Read-Host
         if ([string]::IsNullOrWhiteSpace($input)) {
             return $choices[$defaultIndex - 1].Id
-        } elseif ($input -eq '0') {
+        }
+        elseif ($input -eq '0') {
             return $null
-        } elseif ($input -match '^[1-4]$') {
+        }
+        elseif ($input -match '^[1-4]$') {
             return $choices[[int]$input - 1].Id
-        } else {
+        }
+        else {
             Write-Color '    Invalid selection. Try again.' Red
         }
     }
@@ -360,9 +368,10 @@ function Get-LauncherUsbDiskCandidates {
     $candidates = @()
     try {
         $candidates = @(Get-Disk -ErrorAction SilentlyContinue | Where-Object {
-            $_ -and $_.BusType -and $_.BusType -match 'USB|SD' -and -not $_.IsBoot -and -not $_.IsSystem
-        } | Sort-Object Number)
-    } catch {
+                $_ -and $_.BusType -and $_.BusType -match 'USB|SD' -and -not $_.IsBoot -and -not $_.IsSystem
+            } | Sort-Object Number)
+    }
+    catch {
         $candidates = @()
     }
     return $candidates
@@ -377,7 +386,7 @@ function Select-LauncherUsbDisk {
     if ($DefaultDiskNumber -or $DefaultDiskId) {
         return @{
             UsbDiskNumber = $DefaultDiskNumber
-            UsbDiskId = $DefaultDiskId
+            UsbDiskId     = $DefaultDiskId
         }
     }
 
@@ -392,7 +401,8 @@ function Select-LauncherUsbDisk {
             Write-Color "    [$($i + 1)]  Disk $($disk.Number)  $sizeGb GB  $friendly" White
         }
         Write-Color "    [M]  Enter disk number manually" DarkGray
-    } else {
+    }
+    else {
         Write-Color "    No obvious USB disks were detected." Yellow
     }
     Write-Color "    [0]  Cancel / Exit" DarkGray
@@ -404,31 +414,36 @@ function Select-LauncherUsbDisk {
         if ([string]::IsNullOrWhiteSpace($selection) -and $candidates.Count -gt 0) {
             return @{
                 UsbDiskNumber = [string]$candidates[0].Number
-                UsbDiskId = $null
+                UsbDiskId     = $null
             }
-        } elseif ($selection -eq '0') {
+        }
+        elseif ($selection -eq '0') {
             return $null
-        } elseif ($selection -match '^[1-9]\d*$' -and [int]$selection -le $candidates.Count) {
+        }
+        elseif ($selection -match '^[1-9]\d*$' -and [int]$selection -le $candidates.Count) {
             $disk = $candidates[[int]$selection - 1]
             return @{
                 UsbDiskNumber = [string]$disk.Number
-                UsbDiskId = $null
+                UsbDiskId     = $null
             }
-        } elseif ($selection -match '^\d+$') {
+        }
+        elseif ($selection -match '^\d+$') {
             return @{
                 UsbDiskNumber = $selection
-                UsbDiskId = $null
+                UsbDiskId     = $null
             }
-        } elseif ($selection -match '^[mM]$') {
+        }
+        elseif ($selection -match '^[mM]$') {
             Write-Color "    Enter disk number: " Yellow -NoNewLine
             $manual = Read-Host
             if ($manual -match '^\d+$') {
                 return @{
                     UsbDiskNumber = $manual
-                    UsbDiskId = $null
+                    UsbDiskId     = $null
                 }
             }
-        } else {
+        }
+        else {
             Write-Color '    Invalid selection. Try again.' Red
         }
     }
@@ -516,41 +531,41 @@ function New-LauncherConfigOptions {
 
     $normalizedMode = Normalize-LauncherMode -Mode $Mode
     [ordered]@{
-        Mode = $normalizedMode
-        TargetVersion = $TargetVersion
-        LogPath = $LogPath
-        DownloadPath = $DownloadPath
-        NoReboot = $NoReboot
-        DirectIso = $DirectIso
-        AllowFallback = $AllowFallback
-        ForceOnlineUpdate = $ForceOnlineUpdate
-        MaxRetries = $MaxRetries
-        SkipBypasses = $SkipBypasses
-        SkipBlockerRemoval = $SkipBlockerRemoval
-        SkipTelemetry = $SkipTelemetry
-        SkipRepair = $SkipRepair
+        Mode                  = $normalizedMode
+        TargetVersion         = $TargetVersion
+        LogPath               = $LogPath
+        DownloadPath          = $DownloadPath
+        NoReboot              = $NoReboot
+        DirectIso             = $DirectIso
+        AllowFallback         = $AllowFallback
+        ForceOnlineUpdate     = $ForceOnlineUpdate
+        MaxRetries            = $MaxRetries
+        SkipBypasses          = $SkipBypasses
+        SkipBlockerRemoval    = $SkipBlockerRemoval
+        SkipTelemetry         = $SkipTelemetry
+        SkipRepair            = $SkipRepair
         SkipCumulativeUpdates = $SkipCumulativeUpdates
-        SkipNetworkCheck = $SkipNetworkCheck
-        SkipDiskCheck = $SkipDiskCheck
-        SkipDirectEsd = $SkipDirectEsd
-        SkipEsd = $SkipEsd
-        SkipFido = $SkipFido
-        SkipMct = $SkipMct
-        SkipAssistant = $SkipAssistant
-        SkipWindowsUpdate = $SkipWindowsUpdate
-        CreateUsb = $CreateUsb -or ($normalizedMode -eq 'UsbFromIso')
-        UsbDiskNumber = $UsbDiskNumber
-        UsbDiskId = $UsbDiskId
-        KeepIso = $KeepIso
-        UsbPartitionStyle = 'gpt'
-        PreferredSource = $PreferredSource
-        ForceSource = $ForceSource
-        AllowDeadSources = $AllowDeadSources
-        CheckpointPath = $CheckpointPath
-        SessionId = $SessionId
-        ResumeFromCheckpoint = $ResumeFromCheckpoint
-        ResumeEnabled = $true
-        SourceHealth = if ($SourceHealth) { $SourceHealth } else { [ordered]@{} }
+        SkipNetworkCheck      = $SkipNetworkCheck
+        SkipDiskCheck         = $SkipDiskCheck
+        SkipDirectEsd         = $SkipDirectEsd
+        SkipEsd               = $SkipEsd
+        SkipFido              = $SkipFido
+        SkipMct               = $SkipMct
+        SkipAssistant         = $SkipAssistant
+        SkipWindowsUpdate     = $SkipWindowsUpdate
+        CreateUsb             = $CreateUsb -or ($normalizedMode -eq 'UsbFromIso')
+        UsbDiskNumber         = $UsbDiskNumber
+        UsbDiskId             = $UsbDiskId
+        KeepIso               = $KeepIso
+        UsbPartitionStyle     = 'gpt'
+        PreferredSource       = $PreferredSource
+        ForceSource           = $ForceSource
+        AllowDeadSources      = $AllowDeadSources
+        CheckpointPath        = $CheckpointPath
+        SessionId             = $SessionId
+        ResumeFromCheckpoint  = $ResumeFromCheckpoint
+        ResumeEnabled         = $true
+        SourceHealth          = if ($SourceHealth) { $SourceHealth } else { [ordered]@{} }
     }
 }
 
@@ -597,47 +612,48 @@ function Get-LauncherCurrentValues {
     if ($normalizedMode -eq 'Interactive') {
         if ($CreateUsb) {
             $normalizedMode = 'UsbFromIso'
-        } elseif ($Headless) {
+        }
+        elseif ($Headless) {
             $normalizedMode = 'AutomatedUpgrade'
         }
     }
 
     [ordered]@{
-        ScriptRoot = $ScriptRoot
-        Mode = $normalizedMode
-        Interactive = [bool]$Interactive
-        Headless = [bool]$Headless
-        CreateUsb = [bool]$CreateUsb
-        UsbDiskNumber = $UsbDiskNumber
-        UsbDiskId = $UsbDiskId
-        KeepIso = [bool]$KeepIso
-        PreferredSource = $PreferredSource
-        ForceSource = $ForceSource
-        AllowDeadSources = [bool]$AllowDeadSources
-        CheckpointPath = $CheckpointPath
-        SessionId = $SessionId
-        ResumeFromCheckpoint = [bool]$ResumeFromCheckpoint
-        TargetVersion = $TargetVersion
-        LogPath = $LogPath
-        DownloadPath = $DownloadPath
-        NoReboot = [bool]$NoReboot
-        ForceOnlineUpdate = [bool]$ForceOnlineUpdate
-        MaxRetries = $MaxRetries
-        DirectIso = [bool]$DirectIso
-        AllowFallback = [bool]$AllowFallback
-        SkipBypasses = [bool]$SkipBypasses
-        SkipBlockerRemoval = [bool]$SkipBlockerRemoval
-        SkipTelemetry = [bool]$SkipTelemetry
-        SkipRepair = [bool]$SkipRepair
+        ScriptRoot            = $ScriptRoot
+        Mode                  = $normalizedMode
+        Interactive           = [bool]$Interactive
+        Headless              = [bool]$Headless
+        CreateUsb             = [bool]$CreateUsb
+        UsbDiskNumber         = $UsbDiskNumber
+        UsbDiskId             = $UsbDiskId
+        KeepIso               = [bool]$KeepIso
+        PreferredSource       = $PreferredSource
+        ForceSource           = $ForceSource
+        AllowDeadSources      = [bool]$AllowDeadSources
+        CheckpointPath        = $CheckpointPath
+        SessionId             = $SessionId
+        ResumeFromCheckpoint  = [bool]$ResumeFromCheckpoint
+        TargetVersion         = $TargetVersion
+        LogPath               = $LogPath
+        DownloadPath          = $DownloadPath
+        NoReboot              = [bool]$NoReboot
+        ForceOnlineUpdate     = [bool]$ForceOnlineUpdate
+        MaxRetries            = $MaxRetries
+        DirectIso             = [bool]$DirectIso
+        AllowFallback         = [bool]$AllowFallback
+        SkipBypasses          = [bool]$SkipBypasses
+        SkipBlockerRemoval    = [bool]$SkipBlockerRemoval
+        SkipTelemetry         = [bool]$SkipTelemetry
+        SkipRepair            = [bool]$SkipRepair
         SkipCumulativeUpdates = [bool]$SkipCumulativeUpdates
-        SkipNetworkCheck = [bool]$SkipNetworkCheck
-        SkipDiskCheck = [bool]$SkipDiskCheck
-        SkipDirectEsd = [bool]$SkipDirectEsd
-        SkipEsd = [bool]$SkipEsd
-        SkipFido = [bool]$SkipFido
-        SkipMct = [bool]$SkipMct
-        SkipAssistant = [bool]$SkipAssistant
-        SkipWindowsUpdate = [bool]$SkipWindowsUpdate
+        SkipNetworkCheck      = [bool]$SkipNetworkCheck
+        SkipDiskCheck         = [bool]$SkipDiskCheck
+        SkipDirectEsd         = [bool]$SkipDirectEsd
+        SkipEsd               = [bool]$SkipEsd
+        SkipFido              = [bool]$SkipFido
+        SkipMct               = [bool]$SkipMct
+        SkipAssistant         = [bool]$SkipAssistant
+        SkipWindowsUpdate     = [bool]$SkipWindowsUpdate
     }
 }
 
@@ -704,12 +720,15 @@ function Select-WfuTargetVersion {
             if ([string]::IsNullOrWhiteSpace($familyInput)) {
                 $selectedFamily = $familyNames[$defaultIndex - 1]
                 break
-            } elseif ($familyInput -eq '0') {
+            }
+            elseif ($familyInput -eq '0') {
                 return $null
-            } elseif ($familyInput -match '^\d+$' -and [int]$familyInput -ge 1 -and [int]$familyInput -le $familyNames.Count) {
+            }
+            elseif ($familyInput -match '^\d+$' -and [int]$familyInput -ge 1 -and [int]$familyInput -le $familyNames.Count) {
                 $selectedFamily = $familyNames[[int]$familyInput - 1]
                 break
-            } else {
+            }
+            else {
                 Write-Color '    Invalid selection. Try again.' Red
             }
         }
@@ -736,11 +755,14 @@ function Select-WfuTargetVersion {
         $targetInput = Read-Host
         if ([string]::IsNullOrWhiteSpace($targetInput)) {
             return $familyTargets[-1]
-        } elseif ($targetInput -eq '0') {
+        }
+        elseif ($targetInput -eq '0') {
             return $null
-        } elseif ($targetInput -match '^\d+$' -and [int]$targetInput -ge 1 -and [int]$targetInput -le $familyTargets.Count) {
+        }
+        elseif ($targetInput -match '^\d+$' -and [int]$targetInput -ge 1 -and [int]$targetInput -le $familyTargets.Count) {
             return $familyTargets[[int]$targetInput - 1]
-        } else {
+        }
+        else {
             Write-Color '    Invalid selection. Try again.' Red
         }
     }
@@ -751,32 +773,34 @@ function Select-WfuTargetVersion {
 # ---------------------------------------------
 
 function Get-SystemInfo {
-    $ntVer   = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-    $build   = [int]$ntVer.CurrentBuildNumber
-    $ubr     = [int]$ntVer.UBR
+    $ntVer = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+    $build = [int]$ntVer.CurrentBuildNumber
+    $ubr = [int]$ntVer.UBR
     $display = $ntVer.DisplayVersion   # "22H2", "25H2" etc. -- exists on Win10 2004+ and all Win11
-    $relId   = $ntVer.ReleaseId        # "1809", "1903", "2004" etc. -- old style, stops at "2009"
+    $relId = $ntVer.ReleaseId        # "1809", "1903", "2004" etc. -- old style, stops at "2009"
     $edition = $ntVer.EditionID
     $product = $ntVer.ProductName
 
     # OS generation from build number (always reliable)
-    $osName   = if ($build -ge 22000) { 'Windows 11' } else { 'Windows 10' }
+    $osName = if ($build -ge 22000) { 'Windows 11' } else { 'Windows 10' }
     $osPrefix = if ($build -ge 22000) { '' } else { 'W10_' }
 
     # Feature version from the ACTUAL registry value
     $featureVersion = $null
     if ($display) {
         $featureVersion = $display
-    } elseif ($relId -and $relId -ne '2009') {
+    }
+    elseif ($relId -and $relId -ne '2009') {
         $featureVersion = $relId
     }
 
     # Build version key
     if ($featureVersion) {
         $versionKey = "${osPrefix}${featureVersion}"
-    } else {
+    }
+    else {
         # Fallback for ancient builds without DisplayVersion
-        if     ($build -ge 22000) { $versionKey = '21H2' }
+        if ($build -ge 22000) { $versionKey = '21H2' }
         elseif ($build -ge 19041) { $versionKey = 'W10_2004' }
         elseif ($build -ge 18363) { $versionKey = 'W10_1909' }
         elseif ($build -ge 18362) { $versionKey = 'W10_1903' }
@@ -785,27 +809,29 @@ function Get-SystemInfo {
         elseif ($build -ge 16299) { $versionKey = 'W10_1709' }
         elseif ($build -ge 15063) { $versionKey = 'W10_1703' }
         elseif ($build -ge 14393) { $versionKey = 'W10_1607' }
-        else                      { $versionKey = 'Unknown' }
+        else { $versionKey = 'Unknown' }
     }
 
-    $cs   = Get-CimInstance Win32_ComputerSystem
-    $cpu  = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name
-    $ram  = [math]::Round($cs.TotalPhysicalMemory / 1GB, 1)
+    $cs = Get-CimInstance Win32_ComputerSystem
+    $cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name
+    $ram = [math]::Round($cs.TotalPhysicalMemory / 1GB, 1)
     $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$($env:SystemDrive)'"
-    $freeGB  = [math]::Round($disk.FreeSpace / 1GB, 1)
+    $freeGB = [math]::Round($disk.FreeSpace / 1GB, 1)
     $totalGB = [math]::Round($disk.Size / 1GB, 1)
 
     $tpmStatus = 'Not detected'
     try {
         $tpm = Get-CimInstance -Namespace 'root\cimv2\Security\MicrosoftTpm' -ClassName Win32_Tpm -ErrorAction Stop
         if ($tpm) { $tpmStatus = "v$($tpm.SpecVersion.Split(',')[0].Trim())" }
-    } catch {}
+    }
+    catch {}
 
     $sbStatus = 'Unknown'
     try {
         $sb = Confirm-SecureBootUEFI -ErrorAction Stop
         $sbStatus = if ($sb) { 'Enabled' } else { 'Disabled' }
-    } catch { $sbStatus = 'N/A (BIOS)' }
+    }
+    catch { $sbStatus = 'N/A (BIOS)' }
 
     return @{
         ComputerName = $cs.Name
@@ -884,10 +910,12 @@ function Show-Banner {
 
 if ($Interactive) {
     $Mode = 'Interactive'
-} elseif ($Mode -eq 'Interactive') {
+}
+elseif ($Mode -eq 'Interactive') {
     if ($CreateUsb) {
         $Mode = 'CreateUsb'
-    } elseif ($Headless) {
+    }
+    elseif ($Headless) {
         $Mode = 'Headless'
     }
 }
@@ -901,7 +929,8 @@ if ($ConfigPath -and (Get-Command Read-WfuIniFile -ErrorAction SilentlyContinue)
         if ($Script:ConfigData.Contains('general') -and $Script:ConfigData['general'].Contains('target_version')) {
             $Script:ConfigTargetProvided = $true
         }
-    } catch {
+    }
+    catch {
         Write-Color "    WARNING: Could not read config file $ConfigPath : $($_.Exception.Message)" Yellow
     }
 }
@@ -946,45 +975,47 @@ $launcherValues = Get-LauncherCurrentValues `
 if (Get-Command ConvertTo-WfuCliOptions -ErrorAction SilentlyContinue -and Get-Command New-WfuResolvedOptions -ErrorAction SilentlyContinue) {
     $cliOptions = ConvertTo-WfuCliOptions -BoundParameters $PSBoundParameters -CurrentValues $launcherValues
     $Script:ResolvedOptions = New-WfuResolvedOptions -ConfigPath $ConfigPath -CliOptions $cliOptions
-} else {
+}
+else {
     $fallbackMode = Normalize-LauncherMode -Mode $Mode
     if ($fallbackMode -eq 'Interactive') {
         if ($CreateUsb) {
             $fallbackMode = 'UsbFromIso'
-        } elseif ($Headless) {
+        }
+        elseif ($Headless) {
             $fallbackMode = 'AutomatedUpgrade'
         }
     }
     $Script:ResolvedOptions = [ordered]@{
-        Mode = $fallbackMode
-        TargetVersion = if ($TargetVersion) { $TargetVersion } else { '25H2' }
-        DirectIso = [bool]$DirectIso
-        NoReboot = [bool]$NoReboot
-        AllowFallback = [bool]$AllowFallback
-        SkipBypasses = [bool]$SkipBypasses
-        SkipBlockerRemoval = [bool]$SkipBlockerRemoval
-        SkipTelemetry = [bool]$SkipTelemetry
-        SkipRepair = [bool]$SkipRepair
+        Mode                  = $fallbackMode
+        TargetVersion         = if ($TargetVersion) { $TargetVersion } else { '25H2' }
+        DirectIso             = [bool]$DirectIso
+        NoReboot              = [bool]$NoReboot
+        AllowFallback         = [bool]$AllowFallback
+        SkipBypasses          = [bool]$SkipBypasses
+        SkipBlockerRemoval    = [bool]$SkipBlockerRemoval
+        SkipTelemetry         = [bool]$SkipTelemetry
+        SkipRepair            = [bool]$SkipRepair
         SkipCumulativeUpdates = [bool]$SkipCumulativeUpdates
-        SkipNetworkCheck = [bool]$SkipNetworkCheck
-        SkipDiskCheck = [bool]$SkipDiskCheck
-        SkipDirectEsd = [bool]$SkipDirectEsd
-        SkipEsd = [bool]$SkipEsd
-        SkipFido = [bool]$SkipFido
-        SkipMct = [bool]$SkipMct
-        SkipAssistant = [bool]$SkipAssistant
-        SkipWindowsUpdate = [bool]$SkipWindowsUpdate
-        CreateUsb = [bool]$CreateUsb
-        UsbDiskNumber = $UsbDiskNumber
-        UsbDiskId = $UsbDiskId
-        KeepIso = [bool]$KeepIso
-        PreferredSource = $PreferredSource
-        ForceSource = $ForceSource
-        AllowDeadSources = [bool]$AllowDeadSources
-        CheckpointPath = $CheckpointPath
-        SessionId = $SessionId
-        ResumeFromCheckpoint = [bool]$ResumeFromCheckpoint
-        SourceHealth = @{}
+        SkipNetworkCheck      = [bool]$SkipNetworkCheck
+        SkipDiskCheck         = [bool]$SkipDiskCheck
+        SkipDirectEsd         = [bool]$SkipDirectEsd
+        SkipEsd               = [bool]$SkipEsd
+        SkipFido              = [bool]$SkipFido
+        SkipMct               = [bool]$SkipMct
+        SkipAssistant         = [bool]$SkipAssistant
+        SkipWindowsUpdate     = [bool]$SkipWindowsUpdate
+        CreateUsb             = [bool]$CreateUsb
+        UsbDiskNumber         = $UsbDiskNumber
+        UsbDiskId             = $UsbDiskId
+        KeepIso               = [bool]$KeepIso
+        PreferredSource       = $PreferredSource
+        ForceSource           = $ForceSource
+        AllowDeadSources      = [bool]$AllowDeadSources
+        CheckpointPath        = $CheckpointPath
+        SessionId             = $SessionId
+        ResumeFromCheckpoint  = [bool]$ResumeFromCheckpoint
+        SourceHealth          = @{}
     }
 }
 
@@ -1020,13 +1051,15 @@ $sysLocale = 'Unknown'
 try {
     $ull = Get-WinUserLanguageList -ErrorAction SilentlyContinue
     if ($ull -and $ull.Count -gt 0) { $sysLocale = $ull[0].LanguageTag }
-} catch { }
+}
+catch { }
 # Method 2: Nls\Language\Default LCID
 if ($sysLocale -eq 'Unknown') {
     try {
         $defLcid = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Nls\Language' -Name 'Default' -ErrorAction SilentlyContinue).Default
         if ($defLcid) { $sysLocale = ([System.Globalization.CultureInfo]::GetCultureInfo([int]"0x$defLcid")).Name }
-    } catch { }
+    }
+    catch { }
 }
 # Method 3: Get-WinSystemLocale
 if ($sysLocale -eq 'Unknown') {
@@ -1049,7 +1082,7 @@ Write-Separator
 Write-Header 'HARDWARE STATUS (ALL BYPASSED)'
 
 $tpmColor = if ($info.TPM -match '^v2') { 'Green' } else { 'Yellow' }
-$sbColor  = if ($info.SecureBoot -eq 'Enabled') { 'Green' } else { 'Yellow' }
+$sbColor = if ($info.SecureBoot -eq 'Enabled') { 'Green' } else { 'Yellow' }
 
 $tpmDisplay = $info.TPM
 if ($info.TPM -notmatch '^v2') { $tpmDisplay += '  >> BYPASSED' }
@@ -1082,7 +1115,8 @@ foreach ($targetVersion in $versionTargets) {
             $wuWorked = $true
         }
         Start-Sleep -Milliseconds 300
-    } catch { }
+    }
+    catch { }
 }
 
 # Source 2: Fido API (fallback)
@@ -1103,16 +1137,17 @@ if (-not $wuWorked) {
             if ($skuResp.Skus -and $skuResp.Skus.Count -gt 0) {
                 $engSku = $skuResp.Skus | Where-Object { $_.Language -eq 'English International' } | Select-Object -First 1
                 $RemoteVersions += @{
-                    Version     = $product.Version
-                    Build       = $product.Build
-                    OS          = $product.OS
-                    LangCount   = $skuResp.Skus.Count
+                    Version          = $product.Version
+                    Build            = $product.Build
+                    OS               = $product.OS
+                    LangCount        = $skuResp.Skus.Count
                     FriendlyFileName = if ($engSku.FriendlyFileNames) { $engSku.FriendlyFileNames[0] } else { '' }
-                    Source      = 'Fido'
-                    Available   = $true
+                    Source           = 'Fido'
+                    Available        = $true
                 }
             }
-        } catch { }
+        }
+        catch { }
     }
 }
 
@@ -1144,7 +1179,8 @@ if ($RemoteVersions.Count -gt 0) {
         Write-Color "$status$extraStr" $color
     }
     Write-Color "    Source: $($RemoteVersions[0].Source)" DarkGray
-} else {
+}
+else {
     # API failed -- version map already built from fallback above
     Write-Color "    Could not reach Microsoft servers. Using offline version list." Yellow
     foreach ($k in $FallbackVersions.Keys) {
@@ -1169,8 +1205,8 @@ if ($available.Count -eq 0) {
 }
 
 $currentDisplay = Get-VersionDisplayName $info.VersionKey
-$latestDisplay  = Get-VersionDisplayName $available[-1]
-$isCrossGen     = ($info.VersionKey -like 'W10_*')
+$latestDisplay = Get-VersionDisplayName $available[-1]
+$isCrossGen = ($info.VersionKey -like 'W10_*')
 
 # Show stepped (sequential) path
 Write-Color "    Stepped path:" DarkGray
@@ -1245,8 +1281,8 @@ Write-Separator
 $skipCount = $stepsToTarget.Count
 $isCrossGen = ($info.VersionKey -like 'W10_*' -and -not ($selectedTarget -like 'W10_*'))
 $currentDisp = Get-VersionDisplayName $info.VersionKey
-$targetDisp  = Get-VersionDisplayName $selectedTarget
-$stepsDisp   = ($stepsToTarget | ForEach-Object { Get-VersionDisplayName $_ }) -join ' -> '
+$targetDisp = Get-VersionDisplayName $selectedTarget
+$stepsDisp = ($stepsToTarget | ForEach-Object { Get-VersionDisplayName $_ }) -join ' -> '
 $directIso = $false
 $noReboot = -not $Script:ResolvedOptions.NoReboot
 $doBypass = -not $Script:ResolvedOptions.SkipBypasses
@@ -1274,13 +1310,13 @@ $assistantSourceLabel = Get-SourceHealthLabel -SourceId 'ASSISTANT' -HealthMap $
 $wuSourceLabel = Get-SourceHealthLabel -SourceId 'WINDOWS_UPDATE' -HealthMap $sourceHealthMap
 
 $upgradeMethodItems = @(
-    @{ Name = "Direct WU ESD$directSourceLabel";            Description = '(Microsoft CDN, all versions, from the direct metadata client)'; Enabled = -not (Test-LauncherSourceDead 'WU_DIRECT') -and -not $Script:ResolvedOptions.SkipDirectEsd },
-    @{ Name = "ESD catalog download$esdSourceLabel";        Description = '(permanent CDN, SHA1, 22H2/23H2 only)'; Enabled = -not (Test-LauncherSourceDead 'ESD_CATALOG') -and -not $Script:ResolvedOptions.SkipEsd },
-    @{ Name = "Fido direct ISO download$fidoSourceLabel";   Description = '(ov-df API, 24h links, may be Sentinel-blocked)'; Enabled = -not (Test-LauncherSourceDead 'FIDO') -and -not $Script:ResolvedOptions.SkipFido },
-    @{ Name = "Media Creation Tool ISO$mctSourceLabel";     Description = '(UI automation, needs working internet to MCT)'; Enabled = -not (Test-LauncherSourceDead 'MCT') -and -not $Script:ResolvedOptions.SkipMct },
-    @{ Name = "Installation Assistant$assistantSourceLabel";Description = '(with IFEO hook + health check killer)'; Enabled = -not (Test-LauncherSourceDead 'ASSISTANT') -and -not $Script:ResolvedOptions.SkipAssistant },
-    @{ Name = "Windows Update API$wuSourceLabel";           Description = '(WU COM, slowest, may be policy-blocked)'; Enabled = -not (Test-LauncherSourceDead 'WINDOWS_UPDATE') -and -not $Script:ResolvedOptions.SkipWindowsUpdate },
-    @{ Name = 'Sequential step fallback';                   Description = '(fall back to step-by-step if direct fails)'; Enabled = [bool]$Script:ResolvedOptions.AllowFallback }
+    @{ Name = "Direct WU ESD$directSourceLabel"; Description = '(Microsoft CDN, all versions, from the direct metadata client)'; Enabled = -not (Test-LauncherSourceDead 'WU_DIRECT') -and -not $Script:ResolvedOptions.SkipDirectEsd },
+    @{ Name = "ESD catalog download$esdSourceLabel"; Description = '(permanent CDN, SHA1, 22H2/23H2 only)'; Enabled = -not (Test-LauncherSourceDead 'ESD_CATALOG') -and -not $Script:ResolvedOptions.SkipEsd },
+    @{ Name = "Fido direct ISO download$fidoSourceLabel"; Description = '(ov-df API, 24h links, may be Sentinel-blocked)'; Enabled = -not (Test-LauncherSourceDead 'FIDO') -and -not $Script:ResolvedOptions.SkipFido },
+    @{ Name = "Media Creation Tool ISO$mctSourceLabel"; Description = '(UI automation, needs working internet to MCT)'; Enabled = -not (Test-LauncherSourceDead 'MCT') -and -not $Script:ResolvedOptions.SkipMct },
+    @{ Name = "Installation Assistant$assistantSourceLabel"; Description = '(with IFEO hook + health check killer)'; Enabled = -not (Test-LauncherSourceDead 'ASSISTANT') -and -not $Script:ResolvedOptions.SkipAssistant },
+    @{ Name = "Windows Update API$wuSourceLabel"; Description = '(WU COM, slowest, may be policy-blocked)'; Enabled = -not (Test-LauncherSourceDead 'WINDOWS_UPDATE') -and -not $Script:ResolvedOptions.SkipWindowsUpdate },
+    @{ Name = 'Sequential step fallback'; Description = '(fall back to step-by-step if direct fails)'; Enabled = [bool]$Script:ResolvedOptions.AllowFallback }
 )
 
 $downloadSourceItems = @($upgradeMethodItems[0..3])
@@ -1291,40 +1327,40 @@ if ($interactiveMode -or $automatedUpgradeMode) {
     Write-Separator
 
     $stepDefaults = @{
-        Bypasses = -not $Script:ResolvedOptions.SkipBypasses
+        Bypasses     = -not $Script:ResolvedOptions.SkipBypasses
         BlockRemoval = -not $Script:ResolvedOptions.SkipBlockerRemoval
-        Telemetry = -not $Script:ResolvedOptions.SkipTelemetry
-        Repair = -not $Script:ResolvedOptions.SkipRepair
-        Cumulative = -not $Script:ResolvedOptions.SkipCumulativeUpdates
-        Network = -not $Script:ResolvedOptions.SkipNetworkCheck
-        Disk = -not $Script:ResolvedOptions.SkipDiskCheck
-        AutoReboot = -not $Script:ResolvedOptions.NoReboot
-        DiscardIso = $false
+        Telemetry    = -not $Script:ResolvedOptions.SkipTelemetry
+        Repair       = -not $Script:ResolvedOptions.SkipRepair
+        Cumulative   = -not $Script:ResolvedOptions.SkipCumulativeUpdates
+        Network      = -not $Script:ResolvedOptions.SkipNetworkCheck
+        Disk         = -not $Script:ResolvedOptions.SkipDiskCheck
+        AutoReboot   = -not $Script:ResolvedOptions.NoReboot
+        DiscardIso   = $false
     }
 
     $stepItems = @(
-        @{ Name = 'Hardware bypasses';     Description = '(compatibility registry patches)'; Enabled = $stepDefaults.Bypasses },
-        @{ Name = 'Remove upgrade blocks'; Description = '(policies, deferrals, WSUS)';      Enabled = $stepDefaults.BlockRemoval },
-        @{ Name = 'Telemetry suppression'; Description = '(disable tracking services)';      Enabled = $stepDefaults.Telemetry },
-        @{ Name = 'Component store repair';Description = '(DISM /RestoreHealth + SFC)';      Enabled = -not $Script:ResolvedOptions.SkipRepair },
-        @{ Name = 'Cumulative updates';    Description = '(install pending patches first)';   Enabled = $stepDefaults.Cumulative },
-        @{ Name = 'Network check';         Description = '(test WU endpoint connectivity)';   Enabled = $stepDefaults.Network },
-        @{ Name = 'Disk space check';      Description = '(auto-cleanup if low)';            Enabled = $stepDefaults.Disk },
-        @{ Name = 'Auto-reboot';           Description = '(30s countdown between steps)';    Enabled = $stepDefaults.AutoReboot },
-        @{ Name = 'Discard cached ISO/ESD';Description = '(delete previous downloads)';      Enabled = $stepDefaults.DiscardIso }
+        @{ Name = 'Hardware bypasses'; Description = '(compatibility registry patches)'; Enabled = $stepDefaults.Bypasses },
+        @{ Name = 'Remove upgrade blocks'; Description = '(policies, deferrals, WSUS)'; Enabled = $stepDefaults.BlockRemoval },
+        @{ Name = 'Telemetry suppression'; Description = '(disable tracking services)'; Enabled = $stepDefaults.Telemetry },
+        @{ Name = 'Component store repair'; Description = '(DISM /RestoreHealth + SFC)'; Enabled = -not $Script:ResolvedOptions.SkipRepair },
+        @{ Name = 'Cumulative updates'; Description = '(install pending patches first)'; Enabled = $stepDefaults.Cumulative },
+        @{ Name = 'Network check'; Description = '(test WU endpoint connectivity)'; Enabled = $stepDefaults.Network },
+        @{ Name = 'Disk space check'; Description = '(auto-cleanup if low)'; Enabled = $stepDefaults.Disk },
+        @{ Name = 'Auto-reboot'; Description = '(30s countdown between steps)'; Enabled = $stepDefaults.AutoReboot },
+        @{ Name = 'Discard cached ISO/ESD'; Description = '(delete previous downloads)'; Enabled = $stepDefaults.DiscardIso }
     )
 
     $stepItems = Show-ToggleMenu -Items $stepItems -Title 'CONFIGURE PRE-FLIGHT STEPS'
 
-    $doBypass       = $stepItems[0].Enabled
+    $doBypass = $stepItems[0].Enabled
     $doBlockRemoval = $stepItems[1].Enabled
-    $doTelemetry    = $stepItems[2].Enabled
-    $doRepair       = $stepItems[3].Enabled
-    $doCumulative   = $stepItems[4].Enabled
-    $doNetwork      = $stepItems[5].Enabled
-    $doDisk         = $stepItems[6].Enabled
-    $noReboot       = -not $stepItems[7].Enabled
-    $discardIso     = $stepItems[8].Enabled
+    $doTelemetry = $stepItems[2].Enabled
+    $doRepair = $stepItems[3].Enabled
+    $doCumulative = $stepItems[4].Enabled
+    $doNetwork = $stepItems[5].Enabled
+    $doDisk = $stepItems[6].Enabled
+    $noReboot = -not $stepItems[7].Enabled
+    $discardIso = $stepItems[8].Enabled
 
     # Delete cached ISO/ESD if requested
     if ($discardIso) {
@@ -1337,7 +1373,8 @@ if ($interactiveMode -or $automatedUpgradeMode) {
                     Dismount-DiskImage -ImagePath $_.ImagePath -ErrorAction SilentlyContinue
                     Write-Color "    Dismounted: $($_.ImagePath)" DarkGray
                 }
-        } catch { }
+        }
+        catch { }
 
         foreach ($cached in @("$dlPath\Windows11.iso", "$dlPath\install.esd", "$dlPath\SetupWork", "$dlPath\EsdExtracted", "$dlPath\MCT")) {
             if (Test-Path $cached) {
@@ -1349,7 +1386,8 @@ if ($interactiveMode -or $automatedUpgradeMode) {
                 }
                 if (-not (Test-Path $cached)) {
                     Write-Color "    Discarded: $cached" DarkGray
-                } else {
+                }
+                else {
                     Write-Color "    COULD NOT DELETE: $cached (may be in use)" Red
                 }
             }
@@ -1370,27 +1408,33 @@ if ($interactiveMode -or $automatedUpgradeMode) {
     $allowFallback = $methodItems[6].Enabled
     if ($isCrossGen) {
         $directIso = $true
-    } elseif ($Script:ResolvedOptions.DirectIso -or $usbMode -or $isoDownloadMode) {
+    }
+    elseif ($Script:ResolvedOptions.DirectIso -or $usbMode -or $isoDownloadMode) {
         $directIso = [bool]$Script:ResolvedOptions.DirectIso -or $usbMode -or $isoDownloadMode
-    } else {
+    }
+    else {
         $upgradeMethod = $null
         while ($null -eq $upgradeMethod) {
             Write-Color "    Select method [1-2] (default: 1 = Direct ISO): " Yellow -NoNewLine
             $methodInput = Read-Host
             if ([string]::IsNullOrWhiteSpace($methodInput)) {
                 $upgradeMethod = 1
-            } elseif ($methodInput -eq '0') {
+            }
+            elseif ($methodInput -eq '0') {
                 Write-Color "    Cancelled." DarkGray
                 return
-            } elseif ($methodInput -match '^[12]$') {
+            }
+            elseif ($methodInput -match '^[12]$') {
                 $upgradeMethod = [int]$methodInput
-            } else {
+            }
+            else {
                 Write-Color "    Invalid selection." Red
             }
         }
         $directIso = ($upgradeMethod -eq 1)
     }
-} else {
+}
+else {
     $methodItems = @()
     $methodItems = Show-ToggleMenu -Items $downloadSourceItems -Title 'CONFIGURE ISO SOURCES'
     $useDirectEsd = $methodItems[0].Enabled
@@ -1412,10 +1456,10 @@ Write-Header 'CONFIRM UPGRADE PLAN'
 
 Write-Color "    Mode     : " DarkGray -NoNewLine
 switch ($resolvedMode) {
-    'IsoDownload'      { Write-Color 'Just download ISO' Cyan }
-    'UsbFromIso'       { Write-Color 'Download/use ISO and make USB drive' Cyan }
+    'IsoDownload' { Write-Color 'Just download ISO' Cyan }
+    'UsbFromIso' { Write-Color 'Download/use ISO and make USB drive' Cyan }
     'AutomatedUpgrade' { Write-Color 'Automated in-place upgrade' Cyan }
-    default            { Write-Color 'Interactive' Cyan }
+    default { Write-Color 'Interactive' Cyan }
 }
 
 Write-Color "    Target   : " DarkGray -NoNewLine
@@ -1425,9 +1469,11 @@ if ($usbMode) {
     Write-Color "    USB disk : " DarkGray -NoNewLine
     if ($Script:ResolvedOptions.UsbDiskNumber) {
         Write-Color "Disk $($Script:ResolvedOptions.UsbDiskNumber)" White
-    } elseif ($Script:ResolvedOptions.UsbDiskId) {
+    }
+    elseif ($Script:ResolvedOptions.UsbDiskId) {
         Write-Color $Script:ResolvedOptions.UsbDiskId White
-    } else {
+    }
+    else {
         Write-Color '(manual selection)' White
     }
 }
@@ -1436,7 +1482,8 @@ if ($interactiveMode -or $automatedUpgradeMode) {
     Write-Color "    Method   : " DarkGray -NoNewLine
     if ($directIso) {
         Write-Color "Direct ISO ($currentDisp -> $targetDisp, 1 reboot)" Green
-    } else {
+    }
+    else {
         Write-Color "Sequential ($currentDisp -> $stepsDisp, $skipCount reboot(s))" Yellow
     }
     Write-Color "    Steps    : " DarkGray -NoNewLine
@@ -1446,7 +1493,8 @@ if ($interactiveMode -or $automatedUpgradeMode) {
     Write-Color "    Reboot   : " DarkGray -NoNewLine
     if ($noReboot) {
         Write-Color "Manual (you will be prompted)" Yellow
-    } else {
+    }
+    else {
         Write-Color "Automatic (30s countdown)" Green
     }
     Write-Color "    Downloads: " DarkGray -NoNewLine
@@ -1456,14 +1504,17 @@ if ($interactiveMode -or $automatedUpgradeMode) {
     Write-Color "    Fallback : " DarkGray -NoNewLine
     if ($allowFallback) {
         Write-Color "Enabled (sequential step-by-step if direct fails)" Yellow
-    } else {
+    }
+    else {
         Write-Color "Disabled (stop if all enabled methods fail)" DarkGray
     }
-} else {
+}
+else {
     Write-Color "    Action   : " DarkGray -NoNewLine
     if ($isoDownloadMode) {
         Write-Color 'Download or reuse ISO, then stop' White
-    } elseif ($usbMode) {
+    }
+    elseif ($usbMode) {
         Write-Color 'Download or reuse ISO, then write USB media' White
     }
     Write-Color "    Sources  : " DarkGray -NoNewLine
@@ -1537,7 +1588,8 @@ if ($confirm -match '^[dD]') {
     try {
         $savedDefaultPath = Save-LauncherDefaultIniConfig -Path $defaultSavePath
         Write-Color "    Default template saved: $savedDefaultPath" Green
-    } catch {
+    }
+    catch {
         Write-Color "    Failed to save default template: $($_.Exception.Message)" Red
     }
     return
@@ -1549,7 +1601,8 @@ if ($confirm -match '^[sScC]') {
         $savedConfigPath = Save-WfuIniConfig -Path $configSavePath -Options $configBuilderOptions
         Write-Color "    Config saved: $savedConfigPath" Green
         $ConfigPath = $savedConfigPath
-    } catch {
+    }
+    catch {
         Write-Color "    Failed to save config: $($_.Exception.Message)" Red
         return
     }
@@ -1579,39 +1632,39 @@ if (-not (Test-Path $upgradeScript)) {
 # Build params for the upgrade engine
 $upgradeParams = [ordered]@{
     TargetVersion = $selectedTarget
-    Mode = Get-LauncherRuntimeMode -Mode $resolvedMode
-    ConfigPath = $ConfigPath
-    LogPath = if ($Script:ResolvedOptions.LogPath) { $Script:ResolvedOptions.LogPath } else { $LogPath }
-    DownloadPath = if ($Script:ResolvedOptions.DownloadPath) { $Script:ResolvedOptions.DownloadPath } else { $DownloadPath }
-    MaxRetries = if ($Script:ResolvedOptions.MaxRetries) { [int]$Script:ResolvedOptions.MaxRetries } else { $MaxRetries }
+    Mode          = Get-LauncherRuntimeMode -Mode $resolvedMode
+    ConfigPath    = $ConfigPath
+    LogPath       = if ($Script:ResolvedOptions.LogPath) { $Script:ResolvedOptions.LogPath } else { $LogPath }
+    DownloadPath  = if ($Script:ResolvedOptions.DownloadPath) { $Script:ResolvedOptions.DownloadPath } else { $DownloadPath }
+    MaxRetries    = if ($Script:ResolvedOptions.MaxRetries) { [int]$Script:ResolvedOptions.MaxRetries } else { $MaxRetries }
 }
-if ($noReboot)                { $upgradeParams['NoReboot'] = $true }
-if ($directIso)               { $upgradeParams['DirectIso'] = $true }
-if ($allowFallback)           { $upgradeParams['AllowFallback'] = $true }
+if ($noReboot) { $upgradeParams['NoReboot'] = $true }
+if ($directIso) { $upgradeParams['DirectIso'] = $true }
+if ($allowFallback) { $upgradeParams['AllowFallback'] = $true }
 if ($Script:ResolvedOptions.ForceOnlineUpdate) { $upgradeParams['ForceOnlineUpdate'] = $true }
 if ($usbMode -or $Script:ResolvedOptions.CreateUsb) { $upgradeParams['CreateUsb'] = $true }
-if ($Script:ResolvedOptions.UsbDiskNumber)      { $upgradeParams['UsbDiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber }
-if ($Script:ResolvedOptions.UsbDiskId)         { $upgradeParams['UsbDiskId'] = $Script:ResolvedOptions.UsbDiskId }
-if ($Script:ResolvedOptions.KeepIso)           { $upgradeParams['KeepIso'] = $true }
-if ($Script:ResolvedOptions.PreferredSource)    { $upgradeParams['PreferredSource'] = $Script:ResolvedOptions.PreferredSource }
-if ($Script:ResolvedOptions.ForceSource)        { $upgradeParams['ForceSource'] = $Script:ResolvedOptions.ForceSource }
-if ($Script:ResolvedOptions.AllowDeadSources)   { $upgradeParams['AllowDeadSources'] = $true }
-if ($Script:ResolvedOptions.CheckpointPath)     { $upgradeParams['CheckpointPath'] = $Script:ResolvedOptions.CheckpointPath }
-if ($Script:ResolvedOptions.SessionId)          { $upgradeParams['SessionId'] = $Script:ResolvedOptions.SessionId }
+if ($Script:ResolvedOptions.UsbDiskNumber) { $upgradeParams['UsbDiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber }
+if ($Script:ResolvedOptions.UsbDiskId) { $upgradeParams['UsbDiskId'] = $Script:ResolvedOptions.UsbDiskId }
+if ($Script:ResolvedOptions.KeepIso) { $upgradeParams['KeepIso'] = $true }
+if ($Script:ResolvedOptions.PreferredSource) { $upgradeParams['PreferredSource'] = $Script:ResolvedOptions.PreferredSource }
+if ($Script:ResolvedOptions.ForceSource) { $upgradeParams['ForceSource'] = $Script:ResolvedOptions.ForceSource }
+if ($Script:ResolvedOptions.AllowDeadSources) { $upgradeParams['AllowDeadSources'] = $true }
+if ($Script:ResolvedOptions.CheckpointPath) { $upgradeParams['CheckpointPath'] = $Script:ResolvedOptions.CheckpointPath }
+if ($Script:ResolvedOptions.SessionId) { $upgradeParams['SessionId'] = $Script:ResolvedOptions.SessionId }
 if ($Script:ResolvedOptions.ResumeFromCheckpoint) { $upgradeParams['ResumeFromCheckpoint'] = $true }
-if (-not $doBypass)           { $upgradeParams['SkipBypasses'] = $true }
-if (-not $doBlockRemoval)     { $upgradeParams['SkipBlockerRemoval'] = $true }
-if (-not $doTelemetry)        { $upgradeParams['SkipTelemetry'] = $true }
-if (-not $doRepair)           { $upgradeParams['SkipRepair'] = $true }
-if (-not $doCumulative)       { $upgradeParams['SkipCumulativeUpdates'] = $true }
-if (-not $doNetwork)          { $upgradeParams['SkipNetworkCheck'] = $true }
-if (-not $doDisk)             { $upgradeParams['SkipDiskCheck'] = $true }
-if (-not $useDirectEsd)       { $upgradeParams['SkipDirectEsd'] = $true }
-if (-not $useEsd)             { $upgradeParams['SkipEsd'] = $true }
-if (-not $useFido)            { $upgradeParams['SkipFido'] = $true }
-if (-not $useMct)             { $upgradeParams['SkipMct'] = $true }
-if (-not $useAssistant)       { $upgradeParams['SkipAssistant'] = $true }
-if (-not $useWU)              { $upgradeParams['SkipWindowsUpdate'] = $true }
+if (-not $doBypass) { $upgradeParams['SkipBypasses'] = $true }
+if (-not $doBlockRemoval) { $upgradeParams['SkipBlockerRemoval'] = $true }
+if (-not $doTelemetry) { $upgradeParams['SkipTelemetry'] = $true }
+if (-not $doRepair) { $upgradeParams['SkipRepair'] = $true }
+if (-not $doCumulative) { $upgradeParams['SkipCumulativeUpdates'] = $true }
+if (-not $doNetwork) { $upgradeParams['SkipNetworkCheck'] = $true }
+if (-not $doDisk) { $upgradeParams['SkipDiskCheck'] = $true }
+if (-not $useDirectEsd) { $upgradeParams['SkipDirectEsd'] = $true }
+if (-not $useEsd) { $upgradeParams['SkipEsd'] = $true }
+if (-not $useFido) { $upgradeParams['SkipFido'] = $true }
+if (-not $useMct) { $upgradeParams['SkipMct'] = $true }
+if (-not $useAssistant) { $upgradeParams['SkipAssistant'] = $true }
+if (-not $useWU) { $upgradeParams['SkipWindowsUpdate'] = $true }
 
 $paramDisplay = $upgradeParams.GetEnumerator() | ForEach-Object { "-$($_.Key) $($_.Value)" }
 Write-Color "    $($paramDisplay -join ' ')" Cyan
@@ -1623,7 +1676,8 @@ Write-Host ""
 try {
     & $upgradeScript @upgradeParams
     $exitCode = $LASTEXITCODE
-} catch {
+}
+catch {
     Write-Color "  ERROR: $($_.Exception.Message)" Red
     $exitCode = 1
 }
@@ -1635,7 +1689,8 @@ Write-Host ""
 
 if ($exitCode -eq 0 -or $null -eq $exitCode) {
     Write-Color "  Upgrade engine finished successfully." Green
-} else {
+}
+else {
     Write-Color "  Upgrade engine exited with code $exitCode -- check the log." Yellow
 }
 

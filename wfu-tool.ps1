@@ -61,7 +61,7 @@ param(
 
     [string]$ConfigPath,
 
-    [ValidateSet('Interactive','Headless','Resume','CreateUsb','IsoDownload','UsbFromIso','AutomatedUpgrade')]
+    [ValidateSet('Interactive', 'Headless', 'Resume', 'CreateUsb', 'IsoDownload', 'UsbFromIso', 'AutomatedUpgrade')]
     [string]$Mode,
 
     [switch]$Interactive,
@@ -85,7 +85,7 @@ param(
     [int]$UsbDiskNumber,
     [string]$UsbDiskId,
     [switch]$KeepIso,
-    [ValidateSet('gpt','mbr')]
+    [ValidateSet('gpt', 'mbr')]
     [string]$UsbPartitionStyle = 'gpt',
     [string]$PreferredSource,
     [string]$ForceSource,
@@ -172,7 +172,8 @@ $ErrorActionPreference = 'Continue'
 $wuClientScript = Join-Path $PSScriptRoot 'wfu-tool-windows-update.ps1'
 if (Test-Path $wuClientScript) {
     . $wuClientScript
-} else {
+}
+else {
     Write-Warning "wfu-tool-windows-update.ps1 not found at $wuClientScript"
 }
 
@@ -189,25 +190,25 @@ $Script:RuntimeArtifacts = [ordered]@{}
 # =====================================================================
 
 $Script:VersionMap = [ordered]@{
-    'W10_1507'  = @{ Build = 10240; DisplayVersion = '1507';  OS = 'Windows 10' }
-    'W10_1511'  = @{ Build = 10586; DisplayVersion = '1511';  OS = 'Windows 10' }
-    'W10_1607'  = @{ Build = 14393; DisplayVersion = '1607';  OS = 'Windows 10' }
-    'W10_1703'  = @{ Build = 15063; DisplayVersion = '1703';  OS = 'Windows 10' }
-    'W10_1709'  = @{ Build = 16299; DisplayVersion = '1709';  OS = 'Windows 10' }
-    'W10_1803'  = @{ Build = 17134; DisplayVersion = '1803';  OS = 'Windows 10' }
-    'W10_1809'  = @{ Build = 17763; DisplayVersion = '1809';  OS = 'Windows 10' }
-    'W10_1903'  = @{ Build = 18362; DisplayVersion = '1903';  OS = 'Windows 10' }
-    'W10_1909'  = @{ Build = 18363; DisplayVersion = '1909';  OS = 'Windows 10' }
-    'W10_2004'  = @{ Build = 19041; DisplayVersion = '2004';  OS = 'Windows 10' }
-    'W10_20H2'  = @{ Build = 19042; DisplayVersion = '20H2';  OS = 'Windows 10' }
-    'W10_21H1'  = @{ Build = 19043; DisplayVersion = '21H1';  OS = 'Windows 10' }
-    'W10_21H2'  = @{ Build = 19044; DisplayVersion = '21H2';  OS = 'Windows 10' }
-    'W10_22H2'  = @{ Build = 19045; DisplayVersion = '22H2';  OS = 'Windows 10' }
-    '21H2'      = @{ Build = 22000; DisplayVersion = '21H2';  OS = 'Windows 11' }
-    '22H2'      = @{ Build = 22621; DisplayVersion = '22H2';  OS = 'Windows 11' }
-    '23H2'      = @{ Build = 22631; DisplayVersion = '23H2';  OS = 'Windows 11' }
-    '24H2'      = @{ Build = 26100; DisplayVersion = '24H2';  OS = 'Windows 11' }
-    '25H2'      = @{ Build = 26200; DisplayVersion = '25H2';  OS = 'Windows 11' }
+    'W10_1507' = @{ Build = 10240; DisplayVersion = '1507'; OS = 'Windows 10' }
+    'W10_1511' = @{ Build = 10586; DisplayVersion = '1511'; OS = 'Windows 10' }
+    'W10_1607' = @{ Build = 14393; DisplayVersion = '1607'; OS = 'Windows 10' }
+    'W10_1703' = @{ Build = 15063; DisplayVersion = '1703'; OS = 'Windows 10' }
+    'W10_1709' = @{ Build = 16299; DisplayVersion = '1709'; OS = 'Windows 10' }
+    'W10_1803' = @{ Build = 17134; DisplayVersion = '1803'; OS = 'Windows 10' }
+    'W10_1809' = @{ Build = 17763; DisplayVersion = '1809'; OS = 'Windows 10' }
+    'W10_1903' = @{ Build = 18362; DisplayVersion = '1903'; OS = 'Windows 10' }
+    'W10_1909' = @{ Build = 18363; DisplayVersion = '1909'; OS = 'Windows 10' }
+    'W10_2004' = @{ Build = 19041; DisplayVersion = '2004'; OS = 'Windows 10' }
+    'W10_20H2' = @{ Build = 19042; DisplayVersion = '20H2'; OS = 'Windows 10' }
+    'W10_21H1' = @{ Build = 19043; DisplayVersion = '21H1'; OS = 'Windows 10' }
+    'W10_21H2' = @{ Build = 19044; DisplayVersion = '21H2'; OS = 'Windows 10' }
+    'W10_22H2' = @{ Build = 19045; DisplayVersion = '22H2'; OS = 'Windows 10' }
+    '21H2'     = @{ Build = 22000; DisplayVersion = '21H2'; OS = 'Windows 11' }
+    '22H2'     = @{ Build = 22621; DisplayVersion = '22H2'; OS = 'Windows 11' }
+    '23H2'     = @{ Build = 22631; DisplayVersion = '23H2'; OS = 'Windows 11' }
+    '24H2'     = @{ Build = 26100; DisplayVersion = '24H2'; OS = 'Windows 11' }
+    '25H2'     = @{ Build = 26200; DisplayVersion = '25H2'; OS = 'Windows 11' }
 }
 
 $Script:UpgradeChain = @(
@@ -350,9 +351,9 @@ $Script:UpgradeChain = @(
     }
 )
 
-$Script:ResumeRegKey    = 'HKLM:\SOFTWARE\wfu-tool'
+$Script:ResumeRegKey = 'HKLM:\SOFTWARE\wfu-tool'
 $Script:ResumeValueName = 'ResumeAfterReboot'
-$Script:RunOnceKey      = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+$Script:RunOnceKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
 
 # Track errors for the diagnostic dump at the end
 $Script:ErrorLog = [System.Collections.ArrayList]::new()
@@ -390,14 +391,14 @@ function Get-WfuEngineCliOptions {
 
     $cli = [ordered]@{}
     foreach ($name in @(
-        'ConfigPath','Mode','Interactive','Headless','TargetVersion','NoReboot','LogPath',
-        'DownloadPath','ForceOnlineUpdate','MaxRetries','DirectIso','CreateUsb','UsbDiskNumber',
-        'UsbDiskId','KeepIso','UsbPartitionStyle','PreferredSource','ForceSource',
-        'AllowDeadSources','CheckpointPath','SessionId','ResumeFromCheckpoint','AllowFallback',
-        'SkipBypasses','SkipBlockerRemoval','SkipTelemetry','SkipRepair','SkipCumulativeUpdates',
-        'SkipNetworkCheck','SkipDiskCheck','SkipDirectEsd','SkipEsd','SkipFido','SkipMct',
-        'SkipAssistant','SkipWindowsUpdate'
-    )) {
+            'ConfigPath', 'Mode', 'Interactive', 'Headless', 'TargetVersion', 'NoReboot', 'LogPath',
+            'DownloadPath', 'ForceOnlineUpdate', 'MaxRetries', 'DirectIso', 'CreateUsb', 'UsbDiskNumber',
+            'UsbDiskId', 'KeepIso', 'UsbPartitionStyle', 'PreferredSource', 'ForceSource',
+            'AllowDeadSources', 'CheckpointPath', 'SessionId', 'ResumeFromCheckpoint', 'AllowFallback',
+            'SkipBypasses', 'SkipBlockerRemoval', 'SkipTelemetry', 'SkipRepair', 'SkipCumulativeUpdates',
+            'SkipNetworkCheck', 'SkipDiskCheck', 'SkipDirectEsd', 'SkipEsd', 'SkipFido', 'SkipMct',
+            'SkipAssistant', 'SkipWindowsUpdate'
+        )) {
         if ($BoundParameters.ContainsKey($name)) {
             $cli[$name] = Get-Variable -Name $name -Scope Script -ValueOnly
         }
@@ -405,9 +406,11 @@ function Get-WfuEngineCliOptions {
 
     if ($cli.Contains('Interactive') -and $Interactive) {
         $cli['Mode'] = 'Interactive'
-    } elseif ($cli.Contains('Headless') -and $Headless) {
+    }
+    elseif ($cli.Contains('Headless') -and $Headless) {
         $cli['Mode'] = 'Headless'
-    } elseif ($cli.Contains('CreateUsb') -and $CreateUsb) {
+    }
+    elseif ($cli.Contains('CreateUsb') -and $CreateUsb) {
         $cli['Mode'] = 'UsbFromIso'
     }
 
@@ -415,7 +418,7 @@ function Get-WfuEngineCliOptions {
         $cli['Mode'] = Get-WfuNormalizedMode -Mode $cli['Mode']
     }
 
-    foreach ($transient in @('ConfigPath','Interactive','Headless')) {
+    foreach ($transient in @('ConfigPath', 'Interactive', 'Headless')) {
         if ($cli.Contains($transient)) {
             $null = $cli.Remove($transient)
         }
@@ -453,7 +456,8 @@ function Initialize-WfuRuntimeOptions {
         if ($checkpoint -and $checkpoint.Options) {
             $resolved = Merge-WfuOptions -Base $resolved -Override $checkpoint.Options
             $Script:CheckpointState = $checkpoint
-        } elseif ($resolved.ResumeFromCheckpoint -or $resolved.Mode -eq 'Resume') {
+        }
+        elseif ($resolved.ResumeFromCheckpoint -or $resolved.Mode -eq 'Resume') {
             Write-Log "Checkpoint not found or invalid at $($resolved.CheckpointPath) -- falling back to registry resume state." -Level WARN
         }
     }
@@ -645,12 +649,14 @@ function Invoke-WfuUsbWriterIfAvailable {
         $usbArgs = @{ IsoPath = $IsoPath }
         if ($paramNames -contains 'UsbDiskNumber') {
             $usbArgs['UsbDiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber
-        } elseif ($paramNames -contains 'DiskNumber') {
+        }
+        elseif ($paramNames -contains 'DiskNumber') {
             $usbArgs['DiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber
         }
         if ($paramNames -contains 'UsbDiskId') {
             $usbArgs['UsbDiskId'] = $Script:ResolvedOptions.UsbDiskId
-        } elseif ($paramNames -contains 'DiskId') {
+        }
+        elseif ($paramNames -contains 'DiskId') {
             $usbArgs['DiskId'] = $Script:ResolvedOptions.UsbDiskId
         }
         if ($paramNames -contains 'PartitionStyle') {
@@ -669,7 +675,8 @@ function Invoke-WfuUsbWriterIfAvailable {
         try {
             $result = & $cmd @usbArgs
             return [bool]$result
-        } catch {
+        }
+        catch {
             Write-Log "  USB writer $name failed: $_" -Level WARN
         }
     }
@@ -708,10 +715,10 @@ function Invoke-LegacyWindows10MediaCreation {
     if (-not $sysEdition) { $sysEdition = 'Professional' }
     $mctEdition = switch -Regex ($sysEdition) {
         'Enterprise' { 'Enterprise' }
-        'Education'  { 'Education' }
-        'Core'       { 'HomeBasic' }
-        'Home'       { 'HomeBasic' }
-        default      { 'Professional' }
+        'Education' { 'Education' }
+        'Core' { 'HomeBasic' }
+        'Home' { 'HomeBasic' }
+        default { 'Professional' }
     }
     $omitMediaEditionArg = -not [bool]$spec.SupportsMediaEditionArg
 
@@ -719,11 +726,11 @@ function Invoke-LegacyWindows10MediaCreation {
         $legacyRoot = Join-Path $DownloadPath 'LegacyMedia'
         if ($PSCmdlet.ShouldProcess($Version, "Create legacy $Version ISO via pinned MCT")) {
             return (Invoke-LegacyMctIsoCreation -Version $Version `
-                -Language $sysLang `
-                -Edition $mctEdition `
-                -Arch 'x64' `
-                -OutputIsoPath $OutputIsoPath `
-                -BasePath $legacyRoot)
+                    -Language $sysLang `
+                    -Edition $mctEdition `
+                    -Arch 'x64' `
+                    -OutputIsoPath $OutputIsoPath `
+                    -BasePath $legacyRoot)
         }
         return $false
     }
@@ -764,10 +771,12 @@ function Invoke-LegacyWindows10MediaCreation {
         $ProgressPreference = 'SilentlyContinue'
         try {
             Invoke-WebRequest -Uri $mctSource.Url -OutFile $mctPath -UseBasicParsing -ErrorAction Stop
-        } finally {
+        }
+        finally {
             $ProgressPreference = 'Continue'
         }
-    } else {
+    }
+    else {
         Write-Log "  Using cached legacy MCT: $mctPath" -Level SUCCESS
     }
 
@@ -779,11 +788,11 @@ function Invoke-LegacyWindows10MediaCreation {
     if ($PSCmdlet.ShouldProcess($mctPath, "Create legacy $Version ISO")) {
         Write-Log "  Creating legacy ISO: $Version lang=$sysLang edition=$(if ($omitMediaEditionArg) { 'auto' } else { $mctEdition })" -Level INFO
         return (Start-MctIsoCreation -MctExePath $mctPath `
-            -OutputIsoPath $OutputIsoPath `
-            -LangCode $sysLang `
-            -Edition $mctEdition `
-            -Arch 'x64' `
-            -OmitMediaEditionArg:$omitMediaEditionArg)
+                -OutputIsoPath $OutputIsoPath `
+                -LangCode $sysLang `
+                -Edition $mctEdition `
+                -Arch 'x64' `
+                -OmitMediaEditionArg:$omitMediaEditionArg)
     }
 
     return $false
@@ -803,9 +812,9 @@ function Install-ViaIsoUpgrade {
     $targetInfo = $Script:VersionMap[$Step.To]
     $targetLabel = if ($targetInfo) { "$($targetInfo.OS) $($targetInfo.DisplayVersion)" } else { $Step.To }
     $isLegacyWindows10Target = ($Step.To -like 'W10_*')
-    $supportsDirectMetadata = @('25H2','24H2','23H2','22H2','21H2','W10_21H2','W10_22H2') -contains $Step.To
-    $supportsEsdCatalog = @('22H2','23H2') -contains $Step.To
-    $supportsFido = @('25H2','24H2','23H2','22H2','21H2','W10_20H2','W10_21H2','W10_22H2') -contains $Step.To
+    $supportsDirectMetadata = @('25H2', '24H2', '23H2', '22H2', '21H2', 'W10_21H2', 'W10_22H2') -contains $Step.To
+    $supportsEsdCatalog = @('22H2', '23H2') -contains $Step.To
+    $supportsFido = @('25H2', '24H2', '23H2', '22H2', '21H2', 'W10_20H2', 'W10_21H2', 'W10_22H2') -contains $Step.To
     $isoFileName = if ($Step.To) { "$($Step.To).iso" } else { 'Windows.iso' }
     $isoPath = Join-Path $DownloadPath $isoFileName
 
@@ -814,7 +823,8 @@ function Install-ViaIsoUpgrade {
         $isoSize = [math]::Round((Get-Item $isoPath).Length / 1GB, 1)
         if ($isoSize -gt 3) {
             Write-Log "  Found existing ISO ($isoSize GB): $isoPath" -Level SUCCESS
-        } else {
+        }
+        else {
             Write-Log "  Found ISO but it is only $isoSize GB -- likely incomplete. Removing." -Level WARN
             Remove-Item $isoPath -Force -ErrorAction SilentlyContinue
         }
@@ -843,10 +853,10 @@ function Install-ViaIsoUpgrade {
 
         # Count enabled download methods for numbering
         $dlMethods = @()
-        if (-not $SkipDirectEsd -and $supportsDirectMetadata)  { $dlMethods += 'DirectMetadata' }
-        if (-not $SkipEsd -and $supportsEsdCatalog)  { $dlMethods += 'ESD' }
+        if (-not $SkipDirectEsd -and $supportsDirectMetadata) { $dlMethods += 'DirectMetadata' }
+        if (-not $SkipEsd -and $supportsEsdCatalog) { $dlMethods += 'ESD' }
         if (-not $SkipFido -and $supportsFido) { $dlMethods += 'Fido' }
-        if (-not $SkipMct)  { $dlMethods += 'MCT' }
+        if (-not $SkipMct) { $dlMethods += 'MCT' }
         $dlTotal = $dlMethods.Count
         $dlNum = 0
 
@@ -877,12 +887,14 @@ function Install-ViaIsoUpgrade {
                             Remove-Item $esdPath -Force -ErrorAction SilentlyContinue
                             $releaseDlOk = $false
                         }
-                    } else {
+                    }
+                    else {
                         $esdExtractDir = Convert-EsdToIso -EsdPath $esdPath -OutputDir $DownloadPath -TargetEdition 'Professional'
                         if ($esdExtractDir -and (Test-Path (Join-Path $esdExtractDir 'setup.exe'))) {
                             Write-Log '  Direct WU ESD extracted with setup.exe -- ready to upgrade.' -Level SUCCESS
                             $isoDownloaded = $true
-                        } else {
+                        }
+                        else {
                             Write-Log '  Direct WU ESD extracted but setup.exe not found.' -Level WARN
                         }
                     }
@@ -892,7 +904,8 @@ function Install-ViaIsoUpgrade {
             if (-not $isoDownloaded) {
                 Write-Log '  Direct WU ESD: could not obtain or extract.' -Level WARN
             }
-        } elseif (-not $isoDownloaded -and $SkipDirectEsd) {
+        }
+        elseif (-not $isoDownloaded -and $SkipDirectEsd) {
             Write-Log '  Direct WU ESD: SKIPPED (disabled)' -Level DEBUG
         }
 
@@ -901,45 +914,48 @@ function Install-ViaIsoUpgrade {
         # Only available for 22H2/23H2. Returns $null for 24H2/25H2.
         # ================================================================
         if (-not $SkipEsd -and $supportsEsdCatalog -and -not $isoDownloaded) {
-        $dlNum++
-        Write-Log "  [Download $dlNum/$dlTotal] Trying ESD catalog for $($Step.To)..."
-        $catLang = (Get-SystemLanguageCode).ToLower()
-        $esdInfo = Get-EsdDownloadFromCatalog -Version $Step.To -Language $catLang -Arch 'x64'
-        # Only retry with en-gb if the catalog exists but didn't have en-us
-        # (Don't retry if there's no catalog for this version at all)
-        if (-not $esdInfo -and ($Step.To -eq '22H2' -or $Step.To -eq '23H2')) {
-            $esdInfo = Get-EsdDownloadFromCatalog -Version $Step.To -Language 'en-gb' -Arch 'x64'
-        }
+            $dlNum++
+            Write-Log "  [Download $dlNum/$dlTotal] Trying ESD catalog for $($Step.To)..."
+            $catLang = (Get-SystemLanguageCode).ToLower()
+            $esdInfo = Get-EsdDownloadFromCatalog -Version $Step.To -Language $catLang -Arch 'x64'
+            # Only retry with en-gb if the catalog exists but didn't have en-us
+            # (Don't retry if there's no catalog for this version at all)
+            if (-not $esdInfo -and ($Step.To -eq '22H2' -or $Step.To -eq '23H2')) {
+                $esdInfo = Get-EsdDownloadFromCatalog -Version $Step.To -Language 'en-gb' -Arch 'x64'
+            }
 
-        if ($esdInfo) {
-            $esdDlOk = Start-DownloadWithProgress -Url $esdInfo.Url -Destination $esdPath -Description "Windows 11 ESD ($([math]::Round($esdInfo.Size / 1MB)) MB)"
+            if ($esdInfo) {
+                $esdDlOk = Start-DownloadWithProgress -Url $esdInfo.Url -Destination $esdPath -Description "Windows 11 ESD ($([math]::Round($esdInfo.Size / 1MB)) MB)"
 
-            if ($esdDlOk -and (Test-Path $esdPath)) {
-                # Verify SHA1 hash
-                $hashOk = Test-FileHash -FilePath $esdPath -ExpectedHash $esdInfo.Sha1 -Algorithm SHA1
-                if (-not $hashOk) {
-                    Write-Log '  ESD hash mismatch -- file may be corrupted. Removing.' -Level ERROR
-                    Remove-Item $esdPath -Force -ErrorAction SilentlyContinue
-                } else {
-                    # Convert ESD to installable media
-                    $esdExtractDir = Convert-EsdToIso -EsdPath $esdPath -OutputDir $DownloadPath
-                    if ($esdExtractDir) {
-                        # We don't need an ISO -- we can run setup.exe from the extracted WIM directly
-                        # But we need setup.exe which is in ESD index 2
-                        # If extraction succeeded, check for setup.exe
-                        $esdSetup = Join-Path $esdExtractDir 'setup.exe'
-                        if (Test-Path $esdSetup) {
-                            Write-Log '  ESD extracted with setup.exe -- ready to upgrade.' -Level SUCCESS
-                            $isoDownloaded = $true
-                        } else {
-                            Write-Log '  ESD extracted but setup.exe not found -- will try ISO methods.' -Level WARN
+                if ($esdDlOk -and (Test-Path $esdPath)) {
+                    # Verify SHA1 hash
+                    $hashOk = Test-FileHash -FilePath $esdPath -ExpectedHash $esdInfo.Sha1 -Algorithm SHA1
+                    if (-not $hashOk) {
+                        Write-Log '  ESD hash mismatch -- file may be corrupted. Removing.' -Level ERROR
+                        Remove-Item $esdPath -Force -ErrorAction SilentlyContinue
+                    }
+                    else {
+                        # Convert ESD to installable media
+                        $esdExtractDir = Convert-EsdToIso -EsdPath $esdPath -OutputDir $DownloadPath
+                        if ($esdExtractDir) {
+                            # We don't need an ISO -- we can run setup.exe from the extracted WIM directly
+                            # But we need setup.exe which is in ESD index 2
+                            # If extraction succeeded, check for setup.exe
+                            $esdSetup = Join-Path $esdExtractDir 'setup.exe'
+                            if (Test-Path $esdSetup) {
+                                Write-Log '  ESD extracted with setup.exe -- ready to upgrade.' -Level SUCCESS
+                                $isoDownloaded = $true
+                            }
+                            else {
+                                Write-Log '  ESD extracted but setup.exe not found -- will try ISO methods.' -Level WARN
+                            }
                         }
                     }
                 }
             }
-        }
 
-        } else {
+        }
+        else {
             Write-Log '  ESD catalog download: SKIPPED (disabled)' -Level DEBUG
         }  # end SkipEsd
 
@@ -973,15 +989,18 @@ function Install-ViaIsoUpgrade {
                     if ($dlSize -lt 3) {
                         Write-Log "  Downloaded ISO is only $dlSize GB -- likely corrupted. Removing." -Level WARN
                         Remove-Item $isoPath -Force -ErrorAction SilentlyContinue
-                    } else {
+                    }
+                    else {
                         Write-Log "  ISO downloaded: $dlSize GB" -Level SUCCESS
                         $isoDownloaded = $true
                     }
                 }
-            } else {
+            }
+            else {
                 Write-Log '  Could not get direct download URL from Microsoft API.' -Level WARN
             }
-        } elseif (-not $isoDownloaded) {
+        }
+        elseif (-not $isoDownloaded) {
             Write-Log '  Fido ISO download: SKIPPED (disabled)' -Level DEBUG
         }  # end SkipFido
 
@@ -1001,11 +1020,11 @@ function Install-ViaIsoUpgrade {
             if (-not $sysEdition) { $sysEdition = 'Professional' }
             # MCT only supports specific edition names
             $mctEdition = switch -Regex ($sysEdition) {
-                'Enterprise'   { 'Enterprise' }
-                'Education'    { 'Education' }
-                'Core'         { 'HomeBasic' }
-                'Home'         { 'HomeBasic' }
-                default        { 'Professional' }
+                'Enterprise' { 'Enterprise' }
+                'Education' { 'Education' }
+                'Core' { 'HomeBasic' }
+                'Home' { 'HomeBasic' }
+                default { 'Professional' }
             }
 
             $mctUrl = 'https://go.microsoft.com/fwlink/?linkid=2156295'
@@ -1015,13 +1034,14 @@ function Install-ViaIsoUpgrade {
                 if ($legacySpec) {
                     if ($legacySpec.PreferredMctUrl) {
                         $mctUrl = $legacySpec.PreferredMctUrl
-                    } elseif ($legacySpec.MctUrl) {
+                    }
+                    elseif ($legacySpec.MctUrl) {
                         $mctUrl = $legacySpec.MctUrl
                     }
                     $omitMediaEditionArg = -not [bool]$legacySpec.SupportsMediaEditionArg
                 }
             }
-            $mctDir  = Join-Path $DownloadPath 'MCT'
+            $mctDir = Join-Path $DownloadPath 'MCT'
             $mctPath = Join-Path $mctDir 'MediaCreationTool.exe'
 
             try {
@@ -1056,10 +1076,12 @@ function Install-ViaIsoUpgrade {
                         }
                     }
                 }
-            } catch {
+            }
+            catch {
                 Write-Log "  MCT method failed: $_" -Level WARN
             }
-        } elseif (-not $isoDownloaded) {
+        }
+        elseif (-not $isoDownloaded) {
             Write-Log '  MCT ISO download: SKIPPED (disabled)' -Level DEBUG
         }  # end SkipMct
 
@@ -1152,7 +1174,8 @@ function Install-ViaIsoUpgrade {
                     Set-ItemProperty $appraiserDll -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
                     [IO.File]::WriteAllBytes($appraiserDll, [byte[]]@())
                     Write-Log '  [MCT] appraiserres.dll zeroed (0 bytes)' -Level SUCCESS
-                } else {
+                }
+                else {
                     # Create empty file
                     New-Item -ItemType File -Path $appraiserDll -Force -ErrorAction SilentlyContinue | Out-Null
                     Write-Log '  [MCT] appraiserres.dll created as empty' -Level SUCCESS
@@ -1190,10 +1213,12 @@ function Install-ViaIsoUpgrade {
                             & icacls.exe $hwReqDll /grant *S-1-5-32-544:F 2>$null | Out-Null
                             [IO.File]::WriteAllBytes($hwReqDll, $bytes)
                             Write-Log '  [MCT] hwreqchk.dll patched (TPM GTE 1 -> GTE 0)' -Level SUCCESS
-                        } else {
+                        }
+                        else {
                             Write-Log '  [MCT] hwreqchk.dll: pattern not found (may already be patched or different build)' -Level DEBUG
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Log "  [MCT] hwreqchk.dll patch failed: $_" -Level WARN
                     }
                 }
@@ -1201,10 +1226,12 @@ function Install-ViaIsoUpgrade {
                 $usePatched = $true
                 $setupExe = Join-Path $workDir 'setup.exe'
                 Write-Log '  Patched setup sources ready.' -Level SUCCESS
-            } else {
+            }
+            else {
                 Write-Log '  Copy failed -- using original ISO directly.' -Level WARN
             }
-        } catch {
+        }
+        catch {
             Write-Log "  Patch process failed: $_ -- using original ISO directly." -Level WARN
         }
 
@@ -1230,7 +1257,8 @@ function Install-ViaIsoUpgrade {
                 $setupWorkDir = $workDir
                 Write-Log '  setupprep.exe not found in sources -- falling back to setup.exe' -Level WARN
             }
-        } else {
+        }
+        else {
             $setupPrepExe = $setupExe
             $setupWorkDir = Split-Path $setupExe -Parent
         }
@@ -1249,7 +1277,8 @@ function Install-ViaIsoUpgrade {
             # installed matches the ISO (Home/Pro/Edu), not Server.
             $setupArgs = '/Product Server /SelfHost /Auto Upgrade /MigChoice Upgrade /Compat IgnoreWarning /MigrateDrivers All /ResizeRecoveryPartition Disable /ShowOOBE None /Telemetry Disable /CompactOS Disable /DynamicUpdate Enable /SkipSummary /Eula Accept'
             Write-Log '  Bypass: /Product Server trick active (NOT installing Server -- this skips HW checks)' -Level SUCCESS
-        } else {
+        }
+        else {
             $setupArgs = '/SelfHost /Auto Upgrade /MigChoice Upgrade /Compat IgnoreWarning /MigrateDrivers All /ResizeRecoveryPartition Disable /ShowOOBE None /Telemetry Disable /CompactOS Disable /DynamicUpdate Disable /SkipSummary /Eula Accept'
         }
 
@@ -1289,10 +1318,11 @@ function Install-ViaIsoUpgrade {
                 0xC1900210 { Write-Log '  No qualifying Windows 10/11 edition for upgrade (0xC1900210).' -Level WARN }
                 0x80070002 { Write-Log '  File not found -- ISO may be corrupted (0x80070002).' -Level WARN }
                 0x80070005 { Write-Log '  Access denied -- needs admin (0x80070005).' -Level WARN }
-                default    { Write-Log "  setup.exe failed with code $exitCode (0x$("{0:X}" -f $exitCode))." -Level WARN }
+                default { Write-Log "  setup.exe failed with code $exitCode (0x$("{0:X}" -f $exitCode))." -Level WARN }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Log "  ISO mount/setup failed: $_" -Level WARN
         try { Dismount-DiskImage -ImagePath $isoPath -ErrorAction SilentlyContinue } catch { }
     }
@@ -1310,7 +1340,8 @@ function Start-WindowsUpdateScan {
         $autoUpdate.DetectNow()
         Write-Log '  Windows Update scan initiated (COM).' -Level DEBUG
         $triggered = $true
-    } catch { }
+    }
+    catch { }
 
     # Method 2: UsoClient
     if (-not $triggered) {
@@ -1318,7 +1349,8 @@ function Start-WindowsUpdateScan {
             & UsoClient.exe StartScan 2>$null
             Write-Log '  Windows Update scan initiated (UsoClient).' -Level DEBUG
             $triggered = $true
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 3: Scheduled task trigger
@@ -1327,7 +1359,8 @@ function Start-WindowsUpdateScan {
             & schtasks.exe /Run /TN '\Microsoft\Windows\WindowsUpdate\Scheduled Start' 2>$null
             Write-Log '  Windows Update scan initiated (Scheduled Task).' -Level DEBUG
             $triggered = $true
-        } catch { }
+        }
+        catch { }
     }
 
     if (-not $triggered) {
@@ -1382,7 +1415,8 @@ function Set-ResumeAfterReboot {
         if ($NoReboot) {
             Set-ItemProperty $Script:ResumeRegKey -Name 'NoReboot' -Value 1 -Type DWord -ErrorAction SilentlyContinue
         }
-    } catch {
+    }
+    catch {
         Write-Log "Could not save resume state to registry: $_" -Level WARN
     }
 
@@ -1393,7 +1427,7 @@ function Set-ResumeAfterReboot {
     # Build the PowerShell command for the resume wrapper
     $resumeScript = Join-Path $scriptRoot 'resume-wfu-tool.ps1'
     $psArgs = @(
-        '-ExecutionPolicy','Bypass',
+        '-ExecutionPolicy', 'Bypass',
         '-NoProfile',
         '-File', "`"$resumeScript`"",
         '-ScriptRoot', "`"$scriptRoot`"",
@@ -1460,7 +1494,8 @@ function Set-ResumeAfterReboot {
 
         Write-Log "Scheduled task '$taskName' registered -- will resume at next logon." -Level SUCCESS
         $registered = $true
-    } catch {
+    }
+    catch {
         Write-Log "Could not create scheduled task: $_" -Level WARN
     }
 
@@ -1471,10 +1506,12 @@ function Set-ResumeAfterReboot {
 
         if (-not $registered) {
             Write-Log 'Registered RunOnce fallback for resume-after-reboot.' -Level WARN
-        } else {
+        }
+        else {
             Write-Log 'RunOnce fallback also registered as backup.' -Level DEBUG
         }
-    } catch {
+    }
+    catch {
         Write-Log "Could not register RunOnce fallback: $_" -Level WARN
     }
 
@@ -1493,12 +1530,14 @@ function Clear-ResumeAfterReboot {
     # Remove scheduled task
     try {
         Unregister-ScheduledTask -TaskName 'wfu-tool-resume' -Confirm:$false -ErrorAction SilentlyContinue
-    } catch { }
+    }
+    catch { }
 
     # Remove RunOnce entry
     try {
         Remove-ItemProperty $Script:RunOnceKey -Name 'wfu-tool' -ErrorAction SilentlyContinue
-    } catch { }
+    }
+    catch { }
 
     # Restore settings and clean up registry state
     try {
@@ -1512,7 +1551,8 @@ function Clear-ResumeAfterReboot {
             }
             Remove-Item $Script:ResumeRegKey -Recurse -Force -ErrorAction SilentlyContinue
         }
-    } catch { }
+    }
+    catch { }
 }
 
 function Request-Reboot {
@@ -1540,11 +1580,13 @@ function Request-Reboot {
 
     try {
         Restart-Computer -Force -ErrorAction Stop
-    } catch {
+    }
+    catch {
         Write-Log "Restart-Computer failed: $_ -- trying shutdown.exe..." -Level WARN
         try {
             & shutdown.exe /r /t 5 /f /d p:2:4
-        } catch {
+        }
+        catch {
             Write-Log 'Could not initiate reboot -- please restart manually.' -Level ERROR
         }
     }
@@ -1646,7 +1688,7 @@ function Start-UpgradeChain {
 
     # --- Step 2: Already at target? ---
     $currentBuild = $current.Build
-    $targetBuild  = $Script:VersionMap[$TargetVersion].Build
+    $targetBuild = $Script:VersionMap[$TargetVersion].Build
 
     if ($currentBuild -ge $targetBuild) {
         Write-Log "System is already at $($current.VersionKey) (build $currentBuild) -- at or past target $TargetVersion. Nothing to do!" -Level SUCCESS
@@ -1659,7 +1701,8 @@ function Start-UpgradeChain {
     if ($isMediaOnlyMode) {
         Write-Log 'Media-only mode selected -- skipping upgrade pre-flight and reboot orchestration.' -Level INFO
         Update-WfuRuntimeCheckpoint -Stage 'preflight skipped (media-only)' -CurrentVersion $current.VersionKey -CurrentStep $current.VersionKey -NextStep $TargetVersion -SelectedSource $PreferredSource
-    } else {
+    }
+    else {
         $Script:CurrentPhase = 'Pre-flight checks'
         Write-Phase 'Configuring TLS'
         Repair-TlsConfiguration
@@ -1672,7 +1715,8 @@ function Start-UpgradeChain {
                 Set-ResumeAfterReboot -NextTarget $TargetVersion
                 Request-Reboot -Reason 'Clearing pending reboot before starting upgrade.'
                 return
-            } else {
+            }
+            else {
                 Write-Log 'Continuing despite pending reboot (NoReboot mode).' -Level WARN
             }
         }
@@ -1687,7 +1731,8 @@ function Start-UpgradeChain {
                 $null = Save-DiagnosticBundle -Reason 'Insufficient disk space'
                 return
             }
-        } else {
+        }
+        else {
             Write-Log 'Disk space check: SKIPPED' -Level WARN
         }
 
@@ -1701,7 +1746,8 @@ function Start-UpgradeChain {
                 $null = Save-DiagnosticBundle -Reason 'Network unreachable'
                 return
             }
-        } else {
+        }
+        else {
             Write-Log 'Network check: SKIPPED' -Level WARN
         }
 
@@ -1711,7 +1757,8 @@ function Start-UpgradeChain {
         Write-Phase 'Applying hardware requirement bypasses'
         if (-not $SkipBypasses) {
             Set-HardwareBypasses
-        } else {
+        }
+        else {
             Write-Log 'Hardware bypasses: SKIPPED' -Level WARN
         }
         Complete-Phase
@@ -1720,7 +1767,8 @@ function Start-UpgradeChain {
         Write-Phase 'Removing upgrade policy blockers'
         if (-not $SkipBlockerRemoval) {
             Remove-UpgradeBlockers
-        } else {
+        }
+        else {
             Write-Log 'Blocker removal: SKIPPED' -Level WARN
         }
         Complete-Phase
@@ -1729,7 +1777,8 @@ function Start-UpgradeChain {
         Write-Phase 'Checking component store health'
         if (-not $SkipRepair) {
             $null = Repair-ComponentStore
-        } else {
+        }
+        else {
             Write-Log 'Component store repair: SKIPPED' -Level WARN
         }
         Complete-Phase
@@ -1743,7 +1792,8 @@ function Start-UpgradeChain {
                 Request-Reboot -Reason 'Cumulative updates require a reboot before proceeding with feature update.'
                 return
             }
-        } else {
+        }
+        else {
             Write-Log 'Cumulative updates: SKIPPED' -Level WARN
         }
         Complete-Phase
@@ -1848,7 +1898,8 @@ function Start-UpgradeChain {
                 Request-Reboot -Reason "Upgrade to $TargetVersion needs a reboot to finalize."
                 return
             }
-        } else {
+        }
+        else {
             Write-Log '  Installation Assistant: SKIPPED (disabled)' -Level DEBUG
         }
 
@@ -1862,9 +1913,9 @@ function Start-UpgradeChain {
     # ---- SEQUENTIAL MODE ----
     $Script:CurrentPhase = 'Sequential upgrade'
     $remainingSteps = @($Script:UpgradeChain | Where-Object {
-        $Script:VersionMap[$_.To].Build -gt $currentBuild -and
-        $Script:VersionMap[$_.To].Build -le $targetBuild
-    })
+            $Script:VersionMap[$_.To].Build -gt $currentBuild -and
+            $Script:VersionMap[$_.To].Build -le $targetBuild
+        })
 
     if ($remainingSteps.Count -eq 0) {
         Write-Log 'No upgrade steps needed -- system is up to date.' -Level SUCCESS
@@ -1894,7 +1945,8 @@ function Start-UpgradeChain {
             }
             if ($result -is [array]) { $result = $result[-1] }
             $success = ($result -eq $true)
-        } catch {
+        }
+        catch {
             Write-Log "Unexpected error during $($step.Method): $_" -Level ERROR
             Write-Log $_.ScriptStackTrace -Level DEBUG
             $success = $false
@@ -1917,12 +1969,14 @@ function Start-UpgradeChain {
             $nextSteps = @($remainingSteps | Where-Object { $Script:VersionMap[$_.To].Build -gt $Script:VersionMap[$step.To].Build })
             if ($nextSteps.Count -gt 0) {
                 Set-ResumeAfterReboot -NextTarget ($nextSteps | Select-Object -First 1).To
-            } else {
+            }
+            else {
                 Clear-ResumeAfterReboot
             }
             Request-Reboot -Reason "Feature upgrade to $($step.To) needs a reboot to finalize."
             return
-        } else {
+        }
+        else {
             Write-Log "Upgrade to $($step.To) could not be completed automatically." -Level ERROR
             Write-Log 'Please complete this step manually, reboot, and re-run the script.' -Level WARN
             Set-ResumeAfterReboot -NextTarget $step.To
@@ -1949,15 +2003,16 @@ function Start-UpgradeChain {
 $Script:CancelHandler = $null
 try {
     $Script:CancelHandler = [Console]::add_CancelKeyPress({
-        param($sender, $eventArgs)
-        $eventArgs.Cancel = $true  # Prevent immediate termination -- let finally run
-        $Script:Cancelled = $true
-        Write-Host '' -ForegroundColor Red
-        Write-Host '  *** CTRL+C DETECTED -- Cancelling...' -ForegroundColor Red
-        Write-Host "  *** Phase at cancellation: $($Script:CurrentPhase)" -ForegroundColor Red
-        Write-Host '  *** Cleaning up -- do NOT close this window...' -ForegroundColor Yellow
-    })
-} catch {
+            param($sender, $eventArgs)
+            $eventArgs.Cancel = $true  # Prevent immediate termination -- let finally run
+            $Script:Cancelled = $true
+            Write-Host '' -ForegroundColor Red
+            Write-Host '  *** CTRL+C DETECTED -- Cancelling...' -ForegroundColor Red
+            Write-Host "  *** Phase at cancellation: $($Script:CurrentPhase)" -ForegroundColor Red
+            Write-Host '  *** Cleaning up -- do NOT close this window...' -ForegroundColor Yellow
+        })
+}
+catch {
     # CancelKeyPress may not be available in all hosts (e.g. ISE)
 }
 
@@ -1975,7 +2030,8 @@ try {
         Write-Log "Loaded checkpoint stage: $($Script:CheckpointState.Stage)" -Level INFO
     }
     Update-WfuRuntimeCheckpoint -Stage 'initialized' -CurrentVersion $null -CurrentStep $TargetVersion -NextStep $TargetVersion -SelectedSource $PreferredSource
-} catch {
+}
+catch {
     Write-Host "ERROR: Failed to resolve runtime options: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
@@ -1985,7 +2041,8 @@ try {
     if (-not (Test-Path $Script:DownloadPath)) {
         New-Item -ItemType Directory -Path $Script:DownloadPath -Force -ErrorAction Stop | Out-Null
     }
-} catch {
+}
+catch {
     $Script:DownloadPath = Join-Path $env:TEMP 'wfu-tool'
     New-Item -ItemType Directory -Path $Script:DownloadPath -Force -ErrorAction SilentlyContinue | Out-Null
     if ($Script:ResolvedOptions) {
@@ -2003,22 +2060,26 @@ try {
     if ($env:WFU_TOOL_TEST_MODE -eq '1') {
         Write-Log 'WFU_TOOL_TEST_MODE detected -- skipping upgrade execution.' -Level DEBUG
         $exitReason = 'Test mode'
-    } else {
+    }
+    else {
         Start-UpgradeChain
     }
 
     if ($Script:Cancelled) {
         $exitReason = "Cancelled by user (Ctrl+C) during: $($Script:CurrentPhase)"
     }
-} catch {
+}
+catch {
     if ($Script:Cancelled) {
         $exitReason = "Cancelled by user (Ctrl+C) during: $($Script:CurrentPhase)"
-    } else {
+    }
+    else {
         $exitReason = "Fatal error: $_"
         Write-Log "FATAL UNHANDLED ERROR: $_" -Level ERROR
         Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level ERROR
     }
-} finally {
+}
+finally {
     # ================================================================
     # This ALWAYS runs -- even on Ctrl+C, pipeline stops, or exceptions.
     # Log final state and warn about potential inconsistencies.
@@ -2110,7 +2171,8 @@ try {
         # Capture diagnostics on abnormal exit
         try {
             $null = Save-DiagnosticBundle -Reason $exitReason
-        } catch { }
+        }
+        catch { }
     }
 
     Write-Log '==============================================================='
@@ -2120,5 +2182,6 @@ try {
         if ($Script:CancelHandler) {
             [Console]::remove_CancelKeyPress($Script:CancelHandler)
         }
-    } catch { }
+    }
+    catch { }
 }
