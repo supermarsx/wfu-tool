@@ -1,33 +1,38 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
-:: Store the script directory before anything else
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
 title wfu-tool
 color 0B
 
-:: ================================================================
-::  Auto-elevation: re-launch as Administrator if needed
-:: ================================================================
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
     echo   Requesting administrator privileges...
     echo.
-    :: Write a temporary VBScript for elevation (works on all Windows 11 builds)
-    set "VBS=%TEMP%\elevate_upgrade.vbs"
-    echo Set UAC = CreateObject^("Shell.Application"^) > "!VBS!"
-    echo UAC.ShellExecute "cmd.exe", "/k cd /d ""!SCRIPT_DIR!"" && ""!SCRIPT_DIR!\launch-wfu-tool.bat""", "", "runas", 1 >> "!VBS!"
-    cscript //nologo "!VBS!"
+    set "VBS=%TEMP%\wfu-tool-elevate.vbs"
+    >"!VBS!" (
+        echo Set UAC = CreateObject^("Shell.Application"^)
+        echo scriptDir = WScript.Arguments(0)
+        echo batPath = scriptDir ^& "\launch-wfu-tool.bat"
+        echo argString = ""
+        echo For i = 1 To WScript.Arguments.Count - 1
+        echo     arg = WScript.Arguments(i)
+        echo     If Len(argString) ^> 0 Then argString = argString ^& " "
+        echo     arg = Replace(arg, """", """""")
+        echo     argString = argString ^& """" ^& arg ^& """"
+        echo Next
+        echo command = "/k cd /d " ^& Chr(34) ^& scriptDir ^& Chr(34) ^& " && " ^& Chr(34) ^& batPath ^& Chr(34)
+        echo If Len(argString) ^> 0 Then command = command ^& " " ^& argString
+        echo UAC.ShellExecute "cmd.exe", command, "", "runas", 1
+    )
+    cscript //nologo "!VBS!" "%SCRIPT_DIR%" %*
     del /q "!VBS!" 2>nul
     exit /b
 )
 
-:: ================================================================
-::  We are elevated -- set working directory and launch PowerShell
-:: ================================================================
 cd /d "%SCRIPT_DIR%"
 
 echo.
@@ -37,10 +42,7 @@ echo   ================================================================
 echo   Working directory: %CD%
 echo.
 
-:: Use -Command instead of -File to completely bypass execution policy
-:: Read the script content and execute it in-process
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
-    "& { Set-ExecutionPolicy -Scope Process -Force Bypass 2>$null; . '%SCRIPT_DIR%\launch-wfu-tool.ps1' -ScriptRoot '%SCRIPT_DIR%' }"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\launch-wfu-tool.ps1" -ScriptRoot "%SCRIPT_DIR%" %*
 
 echo.
 if %errorlevel% neq 0 (

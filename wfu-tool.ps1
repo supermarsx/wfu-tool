@@ -56,6 +56,14 @@
 
 [CmdletBinding(SupportsShouldProcess)]
 param(
+    [string]$ConfigPath,
+
+    [ValidateSet('Interactive','Headless','Resume','CreateUsb','IsoDownload','UsbFromIso','AutomatedUpgrade')]
+    [string]$Mode,
+
+    [switch]$Interactive,
+    [switch]$Headless,
+
     [string]$TargetVersion = '25H2',
 
     [switch]$NoReboot,
@@ -69,6 +77,19 @@ param(
 
     # Direct ISO upgrade -- skip intermediate versions, jump straight to target
     [switch]$DirectIso,
+
+    [switch]$CreateUsb,
+    [int]$UsbDiskNumber,
+    [string]$UsbDiskId,
+    [switch]$KeepIso,
+    [ValidateSet('gpt','mbr')]
+    [string]$UsbPartitionStyle = 'gpt',
+    [string]$PreferredSource,
+    [string]$ForceSource,
+    [switch]$AllowDeadSources,
+    [string]$CheckpointPath,
+    [string]$SessionId,
+    [switch]$ResumeFromCheckpoint,
 
     # Allow fallback to sequential/assistant methods if ISO download fails.
     # Default is OFF -- if ISO fails, the whole operation fails.
@@ -109,6 +130,9 @@ if (Test-Path $wuClientScript) {
 $Script:CurrentPhase = 'Initializing'
 $Script:Cancelled = $false
 $Script:StartTime = Get-Date
+$Script:ResolvedOptions = $null
+$Script:CheckpointState = $null
+$Script:RuntimeArtifacts = [ordered]@{}
 
 # =====================================================================
 # Region: Constants & Version Map
@@ -290,6 +314,7 @@ $Script:ErrorLog = [System.Collections.ArrayList]::new()
 $moduleRoot = Join-Path $PSScriptRoot 'modules\Upgrade'
 $moduleFiles = @(
     'Core.ps1',
+    'Automation.ps1',
     'SystemHealth.ps1',
     'UpgradePreparation.ps1',
     'Assistant.ps1',
@@ -304,6 +329,303 @@ foreach ($moduleFile in $moduleFiles) {
         throw "Required module file not found: $modulePath"
     }
     . $modulePath
+}
+
+function Get-WfuEngineCliOptions {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$BoundParameters
+    )
+
+    $cli = [ordered]@{}
+    foreach ($name in @(
+        'ConfigPath','Mode','Interactive','Headless','TargetVersion','NoReboot','LogPath',
+        'DownloadPath','ForceOnlineUpdate','MaxRetries','DirectIso','CreateUsb','UsbDiskNumber',
+        'UsbDiskId','KeepIso','UsbPartitionStyle','PreferredSource','ForceSource',
+        'AllowDeadSources','CheckpointPath','SessionId','ResumeFromCheckpoint','AllowFallback',
+        'SkipBypasses','SkipBlockerRemoval','SkipTelemetry','SkipRepair','SkipCumulativeUpdates',
+        'SkipNetworkCheck','SkipDiskCheck','SkipDirectEsd','SkipEsd','SkipFido','SkipMct',
+        'SkipAssistant','SkipWindowsUpdate'
+    )) {
+        if ($BoundParameters.ContainsKey($name)) {
+            $cli[$name] = Get-Variable -Name $name -Scope Script -ValueOnly
+        }
+    }
+
+    if ($cli.Contains('Interactive') -and $Interactive) {
+        $cli['Mode'] = 'Interactive'
+    } elseif ($cli.Contains('Headless') -and $Headless) {
+        $cli['Mode'] = 'Headless'
+    } elseif ($cli.Contains('CreateUsb') -and $CreateUsb) {
+        $cli['Mode'] = 'UsbFromIso'
+    }
+
+    if ($cli.Contains('Mode') -and $cli['Mode']) {
+        $cli['Mode'] = Get-WfuNormalizedMode -Mode $cli['Mode']
+    }
+
+    foreach ($transient in @('ConfigPath','Interactive','Headless')) {
+        if ($cli.Contains($transient)) {
+            $null = $cli.Remove($transient)
+        }
+    }
+
+    return $cli
+}
+
+function Initialize-WfuRuntimeOptions {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$BoundParameters
+    )
+
+    if (-not (Get-Command New-WfuResolvedOptions -ErrorAction SilentlyContinue)) {
+        throw 'Automation helpers are unavailable.'
+    }
+
+    $cliOptions = Get-WfuEngineCliOptions -BoundParameters $BoundParameters
+    $resumeRequested = $BoundParameters.ContainsKey('ResumeFromCheckpoint') -or (
+        $BoundParameters.ContainsKey('Mode') -and (Get-WfuNormalizedMode -Mode $Mode) -eq 'Resume'
+    )
+    $resolved = New-WfuResolvedOptions -ConfigPath $ConfigPath -CliOptions @{}
+
+    if ($resumeRequested -and -not $BoundParameters.ContainsKey('CheckpointPath')) {
+        $registryCheckpoint = Get-RegValue $Script:ResumeRegKey 'CheckpointPath'
+        $registrySession = Get-RegValue $Script:ResumeRegKey 'SessionId'
+        if ($registryCheckpoint) { $resolved.CheckpointPath = $registryCheckpoint }
+        if ($registrySession) { $resolved.SessionId = $registrySession }
+    }
+
+    if (($resolved.ResumeFromCheckpoint -or $resolved.Mode -eq 'Resume' -or $resumeRequested) -and $resolved.CheckpointPath) {
+        $checkpoint = Read-WfuCheckpoint -Path $resolved.CheckpointPath
+        if ($checkpoint -and $checkpoint.Options) {
+            $resolved = Merge-WfuOptions -Base $resolved -Override $checkpoint.Options
+            $Script:CheckpointState = $checkpoint
+        } elseif ($resolved.ResumeFromCheckpoint -or $resolved.Mode -eq 'Resume') {
+            Write-Log "Checkpoint not found or invalid at $($resolved.CheckpointPath) -- falling back to registry resume state." -Level WARN
+        }
+    }
+
+    if (@($cliOptions).Count -gt 0) {
+        $resolved = Merge-WfuOptions -Base $resolved -Override $cliOptions
+    }
+
+    if (-not $resolved.LogPath) {
+        $resolved.LogPath = Join-Path $PSScriptRoot 'wfu-tool.log'
+    }
+    if (-not $resolved.DownloadPath) {
+        $resolved.DownloadPath = 'C:\wfu-tool'
+    }
+    if (-not $resolved.SessionId) {
+        $resolved.SessionId = [guid]::NewGuid().ToString()
+    }
+    if (-not $resolved.CheckpointPath) {
+        $resolved.CheckpointPath = Get-WfuCheckpointPath -DownloadPath $resolved.DownloadPath -SessionId $resolved.SessionId
+    }
+    if (-not $resolved.Mode) {
+        $resolved.Mode = 'Interactive'
+    }
+    $resolved.Mode = Get-WfuNormalizedMode -Mode $resolved.Mode
+
+    switch ($resolved.Mode) {
+        'CreateUsb' {
+            $resolved.Mode = 'UsbFromIso'
+            $resolved.CreateUsb = $true
+            $resolved.DirectIso = $true
+        }
+        'Headless' {
+            $resolved.Mode = 'AutomatedUpgrade'
+        }
+        'UsbFromIso' {
+            $resolved.CreateUsb = $true
+            $resolved.DirectIso = $true
+        }
+        'IsoDownload' {
+            $resolved.CreateUsb = $false
+            $resolved.DirectIso = $true
+        }
+        'AutomatedUpgrade' {
+            if (-not $resolved.DirectIso) {
+                $resolved.DirectIso = $true
+            }
+        }
+    }
+
+    if ($resolved.CreateUsb -and $resolved.Mode -ne 'UsbFromIso') {
+        $resolved.Mode = 'UsbFromIso'
+        $resolved.DirectIso = $true
+    }
+
+    if ($resolved.Mode -eq 'AutomatedUpgrade' -or $resolved.Mode -eq 'UsbFromIso' -or $resolved.Mode -eq 'IsoDownload') {
+        $headlessErrors = @(Test-WfuHeadlessRequirements -Options $resolved)
+        if ($headlessErrors.Count -gt 0) {
+            throw ($headlessErrors -join ' ')
+        }
+    }
+
+    return $resolved
+}
+
+function Apply-WfuRuntimeOptions {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Options
+    )
+
+    $Script:ResolvedOptions = $Options
+    $Script:Mode = [string]$Options.Mode
+    $Script:TargetVersion = [string]$Options.TargetVersion
+    $Script:NoReboot = [bool]$Options.NoReboot
+    $Script:LogPath = [string]$Options.LogPath
+    $Script:DownloadPath = [string]$Options.DownloadPath
+    $Script:ForceOnlineUpdate = [bool]$Options.ForceOnlineUpdate
+    $Script:MaxRetries = [int]$Options.MaxRetries
+    $Script:DirectIso = [bool]$Options.DirectIso
+    $Script:CreateUsb = [bool]$Options.CreateUsb
+    $Script:UsbDiskNumber = $Options.UsbDiskNumber
+    $Script:UsbDiskId = $Options.UsbDiskId
+    $Script:KeepIso = [bool]$Options.KeepIso
+    $Script:UsbPartitionStyle = [string]$Options.UsbPartitionStyle
+    $Script:PreferredSource = [string]$Options.PreferredSource
+    $Script:ForceSource = [string]$Options.ForceSource
+    $Script:AllowDeadSources = [bool]$Options.AllowDeadSources
+    $Script:CheckpointPath = [string]$Options.CheckpointPath
+    $Script:SessionId = [string]$Options.SessionId
+    $Script:ResumeFromCheckpoint = [bool]$Options.ResumeFromCheckpoint
+    $Script:AllowFallback = [bool]$Options.AllowFallback
+    $Script:SkipBypasses = [bool]$Options.SkipBypasses
+    $Script:SkipBlockerRemoval = [bool]$Options.SkipBlockerRemoval
+    $Script:SkipTelemetry = [bool]$Options.SkipTelemetry
+    $Script:SkipRepair = [bool]$Options.SkipRepair
+    $Script:SkipCumulativeUpdates = [bool]$Options.SkipCumulativeUpdates
+    $Script:SkipNetworkCheck = [bool]$Options.SkipNetworkCheck
+    $Script:SkipDiskCheck = [bool]$Options.SkipDiskCheck
+    $Script:SkipDirectEsd = [bool]$Options.SkipDirectEsd
+    $Script:SkipEsd = [bool]$Options.SkipEsd
+    $Script:SkipFido = [bool]$Options.SkipFido
+    $Script:SkipMct = [bool]$Options.SkipMct
+    $Script:SkipAssistant = [bool]$Options.SkipAssistant
+    $Script:SkipWindowsUpdate = [bool]$Options.SkipWindowsUpdate
+
+    if (-not (Test-Path $Script:DownloadPath)) {
+        New-Item -ItemType Directory -Path $Script:DownloadPath -Force | Out-Null
+    }
+
+    if ($Script:LogPath -and -not (Test-Path $Script:LogPath)) {
+        New-Item -ItemType File -Path $Script:LogPath -Force | Out-Null
+    }
+}
+
+function Get-WfuModeLabel {
+    [CmdletBinding()]
+    param([string]$Mode)
+
+    switch (Get-WfuNormalizedMode -Mode $Mode) {
+        'Interactive' { 'Interactive' }
+        'IsoDownload' { 'ISO download only' }
+        'UsbFromIso' { 'ISO to USB media' }
+        'AutomatedUpgrade' { 'Automated in-place upgrade' }
+        'Resume' { 'Resume' }
+        default { $Mode }
+    }
+}
+
+function Update-WfuRuntimeCheckpoint {
+    [CmdletBinding()]
+    param(
+        [string]$Stage,
+        [string]$CurrentVersion,
+        [string]$CurrentStep,
+        [string]$NextStep,
+        [string]$SelectedSource
+    )
+
+    if (-not $Script:ResolvedOptions -or -not (Get-Command Save-WfuCheckpoint -ErrorAction SilentlyContinue)) {
+        return
+    }
+    if (-not $Script:ResolvedOptions.CheckpointPath) {
+        return
+    }
+
+    $artifacts = [ordered]@{
+        IsoPath             = if ($Script:RuntimeArtifacts.Contains('IsoPath')) { $Script:RuntimeArtifacts['IsoPath'] } else { $null }
+        StagedMediaPath     = if ($Script:RuntimeArtifacts.Contains('StagedMediaPath')) { $Script:RuntimeArtifacts['StagedMediaPath'] } else { $null }
+        LegacyWorkspace     = if ($Script:RuntimeArtifacts.Contains('LegacyWorkspace')) { $Script:RuntimeArtifacts['LegacyWorkspace'] } else { $null }
+        DownloadedArtifacts = if ($Script:RuntimeArtifacts.Contains('DownloadedArtifacts')) { $Script:RuntimeArtifacts['DownloadedArtifacts'] } else { $null }
+    }
+
+    $null = Save-WfuCheckpoint -Path $Script:ResolvedOptions.CheckpointPath `
+        -Options $Script:ResolvedOptions `
+        -CurrentVersion $CurrentVersion `
+        -TargetVersion $Script:ResolvedOptions.TargetVersion `
+        -CurrentStep $CurrentStep `
+        -NextStep $NextStep `
+        -SelectedSource $SelectedSource `
+        -Stage $Stage `
+        -Artifacts $artifacts
+}
+
+function Invoke-WfuUsbWriterIfAvailable {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$IsoPath
+    )
+
+    if (-not $Script:ResolvedOptions.CreateUsb) {
+        return $true
+    }
+
+    $candidateNames = @(
+        'Write-WfuUsbMedia',
+        'Invoke-WfuUsbMedia',
+        'New-WfuUsbMedia',
+        'Invoke-UsbMediaCreation',
+        'Start-WfuUsbCreation'
+    )
+
+    foreach ($name in $candidateNames) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if (-not $cmd) { continue }
+
+        $paramNames = @($cmd.Parameters.Keys)
+        $usbArgs = @{ IsoPath = $IsoPath }
+        if ($paramNames -contains 'UsbDiskNumber') {
+            $usbArgs['UsbDiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber
+        } elseif ($paramNames -contains 'DiskNumber') {
+            $usbArgs['DiskNumber'] = $Script:ResolvedOptions.UsbDiskNumber
+        }
+        if ($paramNames -contains 'UsbDiskId') {
+            $usbArgs['UsbDiskId'] = $Script:ResolvedOptions.UsbDiskId
+        } elseif ($paramNames -contains 'DiskId') {
+            $usbArgs['DiskId'] = $Script:ResolvedOptions.UsbDiskId
+        }
+        if ($paramNames -contains 'PartitionStyle') {
+            $usbArgs['PartitionStyle'] = $Script:ResolvedOptions.UsbPartitionStyle
+        }
+        if ($paramNames -contains 'KeepIso') {
+            $usbArgs['KeepIso'] = $Script:ResolvedOptions.KeepIso
+        }
+        if ($paramNames -contains 'CheckpointPath') {
+            $usbArgs['CheckpointPath'] = $Script:ResolvedOptions.CheckpointPath
+        }
+        if ($paramNames -contains 'SessionId') {
+            $usbArgs['SessionId'] = $Script:ResolvedOptions.SessionId
+        }
+
+        try {
+            $result = & $cmd @usbArgs
+            return [bool]$result
+        } catch {
+            Write-Log "  USB writer $name failed: $_" -Level WARN
+        }
+    }
+
+    Write-Log '  CreateUsb mode requested, but no USB writer helper is available.' -Level WARN
+    return $false
 }
 
 function Invoke-LegacyWindows10MediaCreation {
@@ -701,6 +1023,26 @@ function Install-ViaIsoUpgrade {
         }
     }
 
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.Mode -eq 'IsoDownload') {
+        $Script:RuntimeArtifacts.IsoPath = $isoPath
+        Write-Log "  ISO ready at $isoPath" -Level SUCCESS
+        Update-WfuRuntimeCheckpoint -Stage 'iso ready' -CurrentVersion $Step.From -CurrentStep $Step.To -NextStep $null -SelectedSource $PreferredSource
+        return $true
+    }
+
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.CreateUsb) {
+        Write-Phase 'Preparing USB media'
+        Write-Log '  USB media mode active -- handing off ISO to USB writer.' -Level INFO
+        $Script:RuntimeArtifacts.IsoPath = $isoPath
+        $usbResult = Invoke-WfuUsbWriterIfAvailable -IsoPath $isoPath
+        Complete-Phase
+        if ($usbResult) {
+            Update-WfuRuntimeCheckpoint -Stage 'usb ready' -CurrentVersion $Step.From -CurrentStep $Step.To -NextStep $null -SelectedSource $PreferredSource
+            return $true
+        }
+        return $false
+    }
+
     # Mount ISO and run setup.exe
     if (-not (Test-Path $isoPath)) {
         return $false
@@ -963,6 +1305,8 @@ function Set-ResumeAfterReboot {
     # Determine script root (where all our scripts live)
     $scriptRoot = $PSScriptRoot
     if ([string]::IsNullOrEmpty($scriptRoot)) { $scriptRoot = Split-Path $LogPath -Parent }
+    $sessionCheckpoint = if ($Script:ResolvedOptions -and $Script:ResolvedOptions.CheckpointPath) { $Script:ResolvedOptions.CheckpointPath } else { $CheckpointPath }
+    $sessionId = if ($Script:ResolvedOptions -and $Script:ResolvedOptions.SessionId) { $Script:ResolvedOptions.SessionId } else { $SessionId }
 
     # Save state to registry so the resume wrapper can find everything
     try {
@@ -974,6 +1318,16 @@ function Set-ResumeAfterReboot {
         Set-ItemProperty $Script:ResumeRegKey -Name 'ScriptRoot' -Value $scriptRoot -ErrorAction SilentlyContinue
         Set-ItemProperty $Script:ResumeRegKey -Name 'LogPath' -Value $LogPath -ErrorAction SilentlyContinue
         Set-ItemProperty $Script:ResumeRegKey -Name 'DownloadPath' -Value $DownloadPath -ErrorAction SilentlyContinue
+        if ($sessionCheckpoint) { Set-ItemProperty $Script:ResumeRegKey -Name 'CheckpointPath' -Value $sessionCheckpoint -ErrorAction SilentlyContinue }
+        if ($sessionId) { Set-ItemProperty $Script:ResumeRegKey -Name 'SessionId' -Value $sessionId -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.Mode) { Set-ItemProperty $Script:ResumeRegKey -Name 'Mode' -Value $Script:ResolvedOptions.Mode -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.CreateUsb) { Set-ItemProperty $Script:ResumeRegKey -Name 'CreateUsb' -Value 1 -Type DWord -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbDiskNumber) { Set-ItemProperty $Script:ResumeRegKey -Name 'UsbDiskNumber' -Value $Script:ResolvedOptions.UsbDiskNumber -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbDiskId) { Set-ItemProperty $Script:ResumeRegKey -Name 'UsbDiskId' -Value $Script:ResolvedOptions.UsbDiskId -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbPartitionStyle) { Set-ItemProperty $Script:ResumeRegKey -Name 'UsbPartitionStyle' -Value $Script:ResolvedOptions.UsbPartitionStyle -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.PreferredSource) { Set-ItemProperty $Script:ResumeRegKey -Name 'PreferredSource' -Value $Script:ResolvedOptions.PreferredSource -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.ForceSource) { Set-ItemProperty $Script:ResumeRegKey -Name 'ForceSource' -Value $Script:ResolvedOptions.ForceSource -ErrorAction SilentlyContinue }
+        if ($Script:ResolvedOptions -and $Script:ResolvedOptions.AllowDeadSources) { Set-ItemProperty $Script:ResumeRegKey -Name 'AllowDeadSources' -Value 1 -Type DWord -ErrorAction SilentlyContinue }
         Set-ItemProperty $Script:ResumeRegKey -Name $Script:ResumeValueName -Value 1 -Type DWord -ErrorAction SilentlyContinue
         if ($NoReboot) {
             Set-ItemProperty $Script:ResumeRegKey -Name 'NoReboot' -Value 1 -Type DWord -ErrorAction SilentlyContinue
@@ -982,11 +1336,35 @@ function Set-ResumeAfterReboot {
         Write-Log "Could not save resume state to registry: $_" -Level WARN
     }
 
+    if ($sessionCheckpoint) {
+        Update-WfuRuntimeCheckpoint -Stage 'awaiting reboot' -CurrentVersion $TargetVersion -CurrentStep $TargetVersion -NextStep $NextTarget -SelectedSource $ForceSource
+    }
+
     # Build the PowerShell command for the resume wrapper
     $resumeScript = Join-Path $scriptRoot 'resume-wfu-tool.ps1'
-    $noRebootFlag = ''
-    if ($NoReboot) { $noRebootFlag = ' -NoReboot' }
-    $psArgs = "-ExecutionPolicy Bypass -NoProfile -File `"$resumeScript`" -ScriptRoot `"$scriptRoot`" -TargetVersion $TargetVersion -LogPath `"$LogPath`" -DownloadPath `"$DownloadPath`"$noRebootFlag"
+    $psArgs = @(
+        '-ExecutionPolicy','Bypass',
+        '-NoProfile',
+        '-File', "`"$resumeScript`"",
+        '-ScriptRoot', "`"$scriptRoot`"",
+        '-TargetVersion', $TargetVersion,
+        '-LogPath', "`"$LogPath`"",
+        '-DownloadPath', "`"$DownloadPath`""
+    )
+    if ($ConfigPath) { $psArgs += @('-ConfigPath', "`"$ConfigPath`"") }
+    if ($sessionCheckpoint) { $psArgs += @('-CheckpointPath', "`"$sessionCheckpoint`"") }
+    if ($sessionId) { $psArgs += @('-SessionId', "`"$sessionId`"") }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.Mode) { $psArgs += @('-Mode', $Script:ResolvedOptions.Mode) }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.CreateUsb) { $psArgs += '-CreateUsb' }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbDiskNumber) { $psArgs += @('-UsbDiskNumber', $Script:ResolvedOptions.UsbDiskNumber) }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbDiskId) { $psArgs += @('-UsbDiskId', "`"$($Script:ResolvedOptions.UsbDiskId)`"") }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.UsbPartitionStyle) { $psArgs += @('-UsbPartitionStyle', $Script:ResolvedOptions.UsbPartitionStyle) }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.PreferredSource) { $psArgs += @('-PreferredSource', $Script:ResolvedOptions.PreferredSource) }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.ForceSource) { $psArgs += @('-ForceSource', $Script:ResolvedOptions.ForceSource) }
+    if ($Script:ResolvedOptions -and $Script:ResolvedOptions.AllowDeadSources) { $psArgs += '-AllowDeadSources' }
+    if ($ResumeFromCheckpoint) { $psArgs += '-ResumeFromCheckpoint' }
+    if ($NoReboot) { $psArgs += '-NoReboot' }
+    $psArgs = $psArgs -join ' '
 
     $registered = $false
 
@@ -1193,6 +1571,7 @@ function Start-UpgradeChain {
     Write-Log '==============================================================='
     Write-Log '  wfu-tool Enablement Script v3.0'
     Write-Log '==============================================================='
+    Write-Log "Runtime mode     : $(Get-WfuModeLabel -Mode $Script:ResolvedOptions.Mode)"
     Write-Log "Target version  : $TargetVersion"
     Write-Log "Upgrade method  : $(if ($DirectIso) { 'Direct ISO (skip intermediate versions)' } else { 'Sequential (step by step)' })"
     Write-Log "Log file        : $LogPath"
@@ -1226,99 +1605,100 @@ function Start-UpgradeChain {
     }
 
     # --- Step 3: Pre-flight checks (toggleable) ---
-    $Script:CurrentPhase = 'Pre-flight checks'
-    Write-Phase 'Configuring TLS'
-    Repair-TlsConfiguration
-    Complete-Phase
+    $isMediaOnlyMode = $Script:ResolvedOptions.Mode -eq 'IsoDownload' -or $Script:ResolvedOptions.Mode -eq 'UsbFromIso'
+    if ($isMediaOnlyMode) {
+        Write-Log 'Media-only mode selected -- skipping upgrade pre-flight and reboot orchestration.' -Level INFO
+        Update-WfuRuntimeCheckpoint -Stage 'preflight skipped (media-only)' -CurrentVersion $current.VersionKey -CurrentStep $current.VersionKey -NextStep $TargetVersion -SelectedSource $PreferredSource
+    } else {
+        $Script:CurrentPhase = 'Pre-flight checks'
+        Write-Phase 'Configuring TLS'
+        Repair-TlsConfiguration
+        Complete-Phase
 
-    Write-Phase 'Checking for pending reboots'
-    if (Test-PendingReboot) {
-        Write-Log 'A reboot is pending from a previous operation.' -Level WARN
-        if (-not $NoReboot) {
-            Set-ResumeAfterReboot -NextTarget $TargetVersion
-            Request-Reboot -Reason 'Clearing pending reboot before starting upgrade.'
-            return
+        Write-Phase 'Checking for pending reboots'
+        if (Test-PendingReboot) {
+            Write-Log 'A reboot is pending from a previous operation.' -Level WARN
+            if (-not $NoReboot) {
+                Set-ResumeAfterReboot -NextTarget $TargetVersion
+                Request-Reboot -Reason 'Clearing pending reboot before starting upgrade.'
+                return
+            } else {
+                Write-Log 'Continuing despite pending reboot (NoReboot mode).' -Level WARN
+            }
+        }
+
+        Complete-Phase
+
+        Write-Phase 'Checking disk space'
+        if (-not $SkipDiskCheck) {
+            $diskOk = Test-DiskSpace -RequiredGB 15
+            if (-not $diskOk) {
+                Write-Log 'Insufficient disk space even after cleanup. Free up space and re-run.' -Level ERROR
+                $null = Save-DiagnosticBundle -Reason 'Insufficient disk space'
+                return
+            }
         } else {
-            Write-Log 'Continuing despite pending reboot (NoReboot mode).' -Level WARN
+            Write-Log 'Disk space check: SKIPPED' -Level WARN
         }
-    }
 
-    Complete-Phase
+        Complete-Phase
 
-    # Disk space
-    Write-Phase 'Checking disk space'
-    if (-not $SkipDiskCheck) {
-        $diskOk = Test-DiskSpace -RequiredGB 15
-        if (-not $diskOk) {
-            Write-Log 'Insufficient disk space even after cleanup. Free up space and re-run.' -Level ERROR
-            $null = Save-DiagnosticBundle -Reason 'Insufficient disk space'
-            return
+        Write-Phase 'Checking network connectivity'
+        if (-not $SkipNetworkCheck) {
+            $networkOk = Test-NetworkReadiness
+            if (-not $networkOk) {
+                Write-Log 'No network connectivity to Windows Update. Check your connection and re-run.' -Level ERROR
+                $null = Save-DiagnosticBundle -Reason 'Network unreachable'
+                return
+            }
+        } else {
+            Write-Log 'Network check: SKIPPED' -Level WARN
         }
-    } else {
-        Write-Log 'Disk space check: SKIPPED' -Level WARN
-    }
 
-    Complete-Phase
+        Complete-Phase
 
-    # Network
-    Write-Phase 'Checking network connectivity'
-    if (-not $SkipNetworkCheck) {
-        $networkOk = Test-NetworkReadiness
-        if (-not $networkOk) {
-            Write-Log 'No network connectivity to Windows Update. Check your connection and re-run.' -Level ERROR
-            $null = Save-DiagnosticBundle -Reason 'Network unreachable'
-            return
+        $Script:CurrentPhase = 'Hardware bypasses'
+        Write-Phase 'Applying hardware requirement bypasses'
+        if (-not $SkipBypasses) {
+            Set-HardwareBypasses
+        } else {
+            Write-Log 'Hardware bypasses: SKIPPED' -Level WARN
         }
-    } else {
-        Write-Log 'Network check: SKIPPED' -Level WARN
-    }
+        Complete-Phase
 
-    Complete-Phase
-
-    # --- Step 4: Hardware bypasses ---
-    $Script:CurrentPhase = 'Hardware bypasses'
-    Write-Phase 'Applying hardware requirement bypasses'
-    if (-not $SkipBypasses) {
-        Set-HardwareBypasses
-    } else {
-        Write-Log 'Hardware bypasses: SKIPPED' -Level WARN
-    }
-    Complete-Phase
-
-    # --- Step 5: Blocker removal ---
-    $Script:CurrentPhase = 'Blocker removal'
-    Write-Phase 'Removing upgrade policy blockers'
-    if (-not $SkipBlockerRemoval) {
-        Remove-UpgradeBlockers
-    } else {
-        Write-Log 'Blocker removal: SKIPPED' -Level WARN
-    }
-    Complete-Phase
-
-    # --- Step 6: Component store repair ---
-    $Script:CurrentPhase = 'Component store repair'
-    Write-Phase 'Checking component store health'
-    if (-not $SkipRepair) {
-        $null = Repair-ComponentStore
-    } else {
-        Write-Log 'Component store repair: SKIPPED' -Level WARN
-    }
-    Complete-Phase
-
-    # --- Step 7: Cumulative updates ---
-    $Script:CurrentPhase = 'Cumulative updates'
-    Write-Phase 'Checking for cumulative updates'
-    if (-not $SkipCumulativeUpdates) {
-        $cuStatus = Update-CumulativePatches
-        if ($cuStatus -eq 'RebootNeeded') {
-            Set-ResumeAfterReboot -NextTarget $TargetVersion
-            Request-Reboot -Reason 'Cumulative updates require a reboot before proceeding with feature update.'
-            return
+        $Script:CurrentPhase = 'Blocker removal'
+        Write-Phase 'Removing upgrade policy blockers'
+        if (-not $SkipBlockerRemoval) {
+            Remove-UpgradeBlockers
+        } else {
+            Write-Log 'Blocker removal: SKIPPED' -Level WARN
         }
-    } else {
-        Write-Log 'Cumulative updates: SKIPPED' -Level WARN
+        Complete-Phase
+
+        $Script:CurrentPhase = 'Component store repair'
+        Write-Phase 'Checking component store health'
+        if (-not $SkipRepair) {
+            $null = Repair-ComponentStore
+        } else {
+            Write-Log 'Component store repair: SKIPPED' -Level WARN
+        }
+        Complete-Phase
+
+        $Script:CurrentPhase = 'Cumulative updates'
+        Write-Phase 'Checking for cumulative updates'
+        if (-not $SkipCumulativeUpdates) {
+            $cuStatus = Update-CumulativePatches
+            if ($cuStatus -eq 'RebootNeeded') {
+                Set-ResumeAfterReboot -NextTarget $TargetVersion
+                Request-Reboot -Reason 'Cumulative updates require a reboot before proceeding with feature update.'
+                return
+            }
+        } else {
+            Write-Log 'Cumulative updates: SKIPPED' -Level WARN
+        }
+        Complete-Phase
+        Update-WfuRuntimeCheckpoint -Stage 'preflight complete' -CurrentVersion $current.VersionKey -CurrentStep $current.VersionKey -NextStep $TargetVersion -SelectedSource $PreferredSource
     }
-    Complete-Phase
 
     # =================================================================
     # Step 8: Execute upgrade -- Direct ISO or Sequential
@@ -1360,8 +1740,19 @@ function Start-UpgradeChain {
         if ($result -is [array]) { $result = $result[-1] }
 
         if ($result -eq $true) {
+            if ($Script:ResolvedOptions.Mode -eq 'IsoDownload') {
+                Write-Log "$TargetVersion ISO download completed successfully." -Level SUCCESS
+                Clear-ResumeAfterReboot
+                return
+            }
+            if ($Script:ResolvedOptions.CreateUsb) {
+                Write-Log "$TargetVersion media preparation completed successfully." -Level SUCCESS
+                Clear-ResumeAfterReboot
+                Write-Log 'UsbFromIso mode completed successfully -- no reboot required.' -Level SUCCESS
+                return
+            }
             Write-Log "$TargetVersion direct upgrade initiated successfully." -Level SUCCESS
-            Clear-ResumeAfterReboot
+            Set-ResumeAfterReboot -NextTarget $TargetVersion
             Request-Reboot -Reason "Direct upgrade to $TargetVersion needs a reboot to finalize."
             return
         }
@@ -1391,8 +1782,19 @@ function Start-UpgradeChain {
             if ($assistResult -is [array]) { $assistResult = $assistResult[-1] }
 
             if ($assistResult -eq $true) {
+                if ($Script:ResolvedOptions.Mode -eq 'IsoDownload') {
+                    Write-Log "$TargetVersion ISO download completed successfully." -Level SUCCESS
+                    Clear-ResumeAfterReboot
+                    return
+                }
+                if ($Script:ResolvedOptions.CreateUsb) {
+                    Write-Log "$TargetVersion media preparation completed successfully." -Level SUCCESS
+                    Clear-ResumeAfterReboot
+                    Write-Log 'UsbFromIso mode completed successfully -- no reboot required.' -Level SUCCESS
+                    return
+                }
                 Write-Log "$TargetVersion upgrade initiated via Installation Assistant." -Level SUCCESS
-                Clear-ResumeAfterReboot
+                Set-ResumeAfterReboot -NextTarget $TargetVersion
                 Request-Reboot -Reason "Upgrade to $TargetVersion needs a reboot to finalize."
                 return
             }
@@ -1449,6 +1851,17 @@ function Start-UpgradeChain {
         }
 
         if ($success) {
+            if ($Script:ResolvedOptions.Mode -eq 'IsoDownload') {
+                Write-Log "$($step.To) ISO download completed successfully." -Level SUCCESS
+                Clear-ResumeAfterReboot
+                return
+            }
+            if ($Script:ResolvedOptions.CreateUsb) {
+                Write-Log "$($step.To) media preparation completed successfully." -Level SUCCESS
+                Clear-ResumeAfterReboot
+                Write-Log 'UsbFromIso mode completed successfully -- no reboot required.' -Level SUCCESS
+                return
+            }
             Write-Log "$($step.To) upgrade initiated successfully." -Level SUCCESS
 
             $nextSteps = @($remainingSteps | Where-Object { $Script:VersionMap[$_.To].Build -gt $Script:VersionMap[$step.To].Build })
@@ -1457,7 +1870,6 @@ function Start-UpgradeChain {
             } else {
                 Clear-ResumeAfterReboot
             }
-
             Request-Reboot -Reason "Feature upgrade to $($step.To) needs a reboot to finalize."
             return
         } else {
@@ -1503,21 +1915,47 @@ try {
 # Region: Entry Point
 # =====================================================================
 
+# Resolve automation/config/session state before anything else uses the legacy globals.
+try {
+    $resolvedOptions = Initialize-WfuRuntimeOptions -BoundParameters $PSBoundParameters
+    Apply-WfuRuntimeOptions -Options $resolvedOptions
+    Write-Log "Runtime mode resolved: $($Script:ResolvedOptions.Mode)" -Level DEBUG
+    Write-Log "Checkpoint path: $($Script:ResolvedOptions.CheckpointPath)" -Level DEBUG
+    if ($Script:CheckpointState -and $Script:CheckpointState.Stage) {
+        Write-Log "Loaded checkpoint stage: $($Script:CheckpointState.Stage)" -Level INFO
+    }
+    Update-WfuRuntimeCheckpoint -Stage 'initialized' -CurrentVersion $null -CurrentStep $TargetVersion -NextStep $TargetVersion -SelectedSource $PreferredSource
+} catch {
+    Write-Host "ERROR: Failed to resolve runtime options: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
 # Create download directory
 try {
-    if (-not (Test-Path $DownloadPath)) {
-        New-Item -ItemType Directory -Path $DownloadPath -Force -ErrorAction Stop | Out-Null
+    if (-not (Test-Path $Script:DownloadPath)) {
+        New-Item -ItemType Directory -Path $Script:DownloadPath -Force -ErrorAction Stop | Out-Null
     }
 } catch {
-    $DownloadPath = Join-Path $env:TEMP 'wfu-tool'
-    New-Item -ItemType Directory -Path $DownloadPath -Force -ErrorAction SilentlyContinue | Out-Null
-    Write-Log "Could not create download path, using: $DownloadPath" -Level WARN
+    $Script:DownloadPath = Join-Path $env:TEMP 'wfu-tool'
+    New-Item -ItemType Directory -Path $Script:DownloadPath -Force -ErrorAction SilentlyContinue | Out-Null
+    if ($Script:ResolvedOptions) {
+        $Script:ResolvedOptions.DownloadPath = $Script:DownloadPath
+        if ($Script:ResolvedOptions.SessionId) {
+            $Script:ResolvedOptions.CheckpointPath = Get-WfuCheckpointPath -DownloadPath $Script:DownloadPath -SessionId $Script:ResolvedOptions.SessionId
+        }
+    }
+    Write-Log "Could not create download path, using: $Script:DownloadPath" -Level WARN
 }
 
 # Run the chain with comprehensive error + cancellation handling
 $exitReason = 'Completed normally'
 try {
-    Start-UpgradeChain
+    if ($env:WFU_TOOL_TEST_MODE -eq '1') {
+        Write-Log 'WFU_TOOL_TEST_MODE detected -- skipping upgrade execution.' -Level DEBUG
+        $exitReason = 'Test mode'
+    } else {
+        Start-UpgradeChain
+    }
 
     if ($Script:Cancelled) {
         $exitReason = "Cancelled by user (Ctrl+C) during: $($Script:CurrentPhase)"
