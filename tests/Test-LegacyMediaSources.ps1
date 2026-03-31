@@ -23,39 +23,50 @@ if ($manifest1507) {
 }
 
 $preferred1507 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Architecture 'x64')
-Assert-True ($preferred1507.Count -ge 2) 'Legacy sources: W10_1507 x64 has at least two preferred sources'
-if ($preferred1507.Count -ge 2) {
-    Assert-Equal 'XML' $preferred1507[0].Kind 'Legacy sources: W10_1507 x64 prefers catalog XML first'
-    Assert-Equal 'MCTEXE' $preferred1507[1].Kind 'Legacy sources: W10_1507 x64 prefers MCT second'
-    Assert-Equal 'x64' $preferred1507[1].Architecture 'Legacy sources: W10_1507 x64 MCT source is x64'
-    Assert-Match 'MediaCreationTool.*\.exe$' $preferred1507[1].FileName 'Legacy sources: W10_1507 MCT filename looks correct'
+$allPreferred1507 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Architecture 'x64' -IncludeDead)
+Assert-True ($preferred1507.Count -ge 1) 'Legacy sources: W10_1507 x64 has at least one auto-eligible preferred source'
+Assert-True ($allPreferred1507.Count -ge 2) 'Legacy sources: W10_1507 x64 exposes dead and live sources when requested'
+if ($allPreferred1507.Count -ge 2) {
+    $deadCatalog1507 = @($allPreferred1507 | Where-Object { $_.Health -eq 'dead' -and $_.Kind -in @('XML','CAB') })
+    Assert-True ($deadCatalog1507.Count -ge 1) 'Legacy sources: W10_1507 x64 keeps dead catalog sources selectable'
+}
+if ($preferred1507.Count -ge 1) {
+    Assert-True ($preferred1507[0].Health -ne 'dead') 'Legacy sources: W10_1507 x64 auto ordering excludes dead sources'
+    Assert-Equal 'MCTEXE' $preferred1507[0].Kind 'Legacy sources: W10_1507 x64 prefers the live launcher source first'
+    Assert-Equal 'x64' $preferred1507[0].Architecture 'Legacy sources: W10_1507 x64 first source architecture'
+    Assert-Match 'MediaCreationTool.*\.exe$' $preferred1507[0].FileName 'Legacy sources: W10_1507 x64 first source filename looks correct'
 }
 
 $preferred1607 = @(Get-LegacyMediaPreferredSources -Version 'W10_1607' -Architecture 'x64')
-Assert-True ($preferred1607.Count -ge 2) 'Legacy sources: W10_1607 x64 has at least two preferred sources'
-if ($preferred1607.Count -ge 2) {
-    Assert-Equal 'CAB' $preferred1607[0].Kind 'Legacy sources: W10_1607 x64 prefers CAB first'
-    Assert-Equal 'MCTEXE' $preferred1607[1].Kind 'Legacy sources: W10_1607 x64 prefers MCT second'
-    Assert-Match 'Products_20170116\.cab$|products_20170116\.cab$' $preferred1607[0].FileName 'Legacy sources: W10_1607 CAB filename looks correct'
+$allPreferred1607 = @(Get-LegacyMediaPreferredSources -Version 'W10_1607' -Architecture 'x64' -IncludeDead)
+Assert-True ($preferred1607.Count -ge 1) 'Legacy sources: W10_1607 x64 has at least one auto-eligible preferred source'
+Assert-True ($allPreferred1607.Count -ge 2) 'Legacy sources: W10_1607 x64 exposes dead and live sources when requested'
+if ($preferred1607.Count -ge 1) {
+    Assert-True ($preferred1607[0].Health -ne 'dead') 'Legacy sources: W10_1607 x64 auto ordering excludes dead sources'
+    Assert-Equal 'MCTEXE' $preferred1607[0].Kind 'Legacy sources: W10_1607 x64 prefers the live launcher source first'
+    Assert-Match 'MediaCreationTool.*\.exe$' $preferred1607[0].FileName 'Legacy sources: W10_1607 x64 first source filename looks correct'
 }
 
 $preferred1507X86 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Architecture 'x86')
-Assert-True ($preferred1507X86.Count -ge 2) 'Legacy sources: W10_1507 x86 has at least two preferred sources'
-if ($preferred1507X86.Count -ge 2) {
+$allPreferred1507X86 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Architecture 'x86' -IncludeDead)
+Assert-True ($preferred1507X86.Count -ge 1) 'Legacy sources: W10_1507 x86 has at least one auto-eligible preferred source'
+Assert-True ($allPreferred1507X86.Count -ge 2) 'Legacy sources: W10_1507 x86 exposes dead and live sources when requested'
+if ($preferred1507X86.Count -ge 1) {
     Assert-True ($preferred1507X86[0].Kind -in @('MCTEXE','XML')) 'Legacy sources: W10_1507 x86 selects a usable first source'
-    $x86MctSources = @($preferred1507X86 | Where-Object { $_.Kind -eq 'MCTEXE' -and $_.Architecture -eq 'x86' })
-    Assert-True ($x86MctSources.Count -ge 1) 'Legacy sources: W10_1507 x86 exposes an x86 MCT source'
+    Assert-True ($preferred1507X86[0].Health -ne 'dead') 'Legacy sources: W10_1507 x86 auto ordering excludes dead sources'
+    $x86MctSources = @($allPreferred1507X86 | Where-Object { $_.Kind -eq 'MCTEXE' -and $_.Architecture -eq 'x86' })
+    Assert-True ($x86MctSources.Count -ge 1) 'Legacy sources: W10_1507 x86 exposes an x86 MCT source when requested'
 }
 
 $resolved = Resolve-LegacyMediaSource -Version 'W10_1507' -Architecture 'x64' -Mode 'Preferred'
 Assert-NotNull $resolved 'Legacy sources: preferred source resolves'
 if ($resolved) {
-    Assert-Equal 'XML' $resolved.Kind 'Legacy sources: resolved preferred source is XML'
     Assert-Equal 'W10_1507' $resolved.Version 'Legacy sources: resolved preferred source version matches'
+    Assert-True ($resolved.Health -ne 'dead') 'Legacy sources: resolved preferred source is auto-eligible'
 }
 
 $allSources = @(Resolve-LegacyMediaSource -Version 'W10_1507' -Architecture 'x64' -Mode 'All')
-Assert-True ($allSources.Count -ge 2) 'Legacy sources: all-mode resolves multiple source descriptors'
+Assert-True ($allSources.Count -ge 1) 'Legacy sources: all-mode resolves source descriptors'
 
 $plan = Get-LegacyMediaDownloadPlan -Version 'W10_1507' -Architecture 'x64'
 Assert-NotNull $plan 'Legacy sources: download plan exists'
@@ -65,6 +76,7 @@ if ($plan) {
     Assert-Equal 10240 $plan.Build 'Legacy sources: plan build matches'
     Assert-Equal 'Windows 10' $plan.OS 'Legacy sources: plan OS matches'
     Assert-Equal 'x64' $plan.Architecture 'Legacy sources: plan architecture matches'
-    Assert-True ($plan.Sources.Count -ge 2) 'Legacy sources: plan contains multiple staged sources'
+    Assert-True ($plan.Sources.Count -ge 1) 'Legacy sources: plan contains at least one staged source'
+    Assert-True ($plan.Sources[0].Health -ne 'dead') 'Legacy sources: plan excludes dead sources from auto staging'
     Assert-Equal $preferred1507[0].Kind $plan.Sources[0].Kind 'Legacy sources: plan preserves preferred order'
 }

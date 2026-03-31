@@ -22,6 +22,9 @@ Write-Host ''
 # Dot-source the main script to load all functions (without running Start-UpgradeChain)
 # We override params to prevent execution
 $env:WFU_TOOL_TEST_MODE = '1'
+if ($env:GITHUB_ACTIONS -eq 'true' -and -not $env:WFU_TOOL_CI_MODE) {
+    $env:WFU_TOOL_CI_MODE = '1'
+}
 $Script:LogPath = Join-Path $env:TEMP 'WFU_TOOL_Test.log'
 $Script:DownloadPath = Join-Path $env:TEMP 'WFU_TOOL_TestDL'
 $Script:MaxRetries = 1
@@ -112,11 +115,23 @@ function Skip-Test {
     Write-Host "    SKIP: $TestName ($Reason)" -ForegroundColor Yellow
 }
 
-# Export helpers for test files
-Export-ModuleMember -Function * -ErrorAction SilentlyContinue
+# Export helpers for test files when hosted as a module
+if ($ExecutionContext.SessionState.Module) {
+    Export-ModuleMember -Function * -ErrorAction SilentlyContinue
+}
 
 # Find and run test files
-$testFiles = Get-ChildItem $testDir -Filter "Test-$Filter.ps1" | Where-Object { $_.Name -ne 'Test-Runner.ps1' } | Sort-Object Name
+if ($Filter -eq '*') {
+    $testPattern = $null
+} else {
+    $testPattern = "^Test-($Filter)$"
+}
+
+$testFiles = @(Get-ChildItem $testDir -Filter 'Test-*.ps1' | Where-Object {
+    $_.Name -ne 'Test-Runner.ps1' -and (
+        $null -eq $testPattern -or $_.BaseName -match $testPattern
+    )
+} | Sort-Object Name)
 Write-Host "  Found $($testFiles.Count) test file(s)" -ForegroundColor DarkGray
 Write-Host ''
 

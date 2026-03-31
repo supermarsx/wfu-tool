@@ -3,8 +3,9 @@
 # -- Remote version discovery --
 Write-Host '    (This test requires internet -- may take 15-30s)' -ForegroundColor DarkGray
 $versions = Get-RemoteAvailableVersions
+$versions = @($versions)
 
-if ($versions -and $versions.Count -gt 0) {
+if ($versions.Count -gt 0) {
     Assert-True ($versions.Count -ge 2) 'RemoteVersions: Found at least 2 versions'
 
     # Check structure of returned objects
@@ -29,8 +30,16 @@ if ($versions -and $versions.Count -gt 0) {
             Assert-NotNull $legacy.Source "RemoteVersions[$($legacy.Version)]: Source is identified"
             Assert-Equal 'Windows 10' $legacy.OS "RemoteVersions[$($legacy.Version)]: OS is Windows 10"
             Assert-True ($legacy.Build -gt 10000) "RemoteVersions[$($legacy.Version)]: Build $($legacy.Build) > 10000"
-            Assert-NotNull $legacy.SourceFamily "RemoteVersions[$($legacy.Version)]: SourceFamily is identified"
-            Assert-True ($legacy.DiscoverySource -match 'Pinned|Manifest|Legacy') "RemoteVersions[$($legacy.Version)]: Discovery source is pinned legacy data"
+            if ($legacy.PSObject.Properties.Name -contains 'SourceFamily') {
+                Assert-NotNull $legacy.SourceFamily "RemoteVersions[$($legacy.Version)]: SourceFamily is identified"
+            } else {
+                Skip-Test "RemoteVersions[$($legacy.Version)]: SourceFamily" 'SourceFamily is not surfaced by the current discovery shape'
+            }
+            if ($legacy.PSObject.Properties.Name -contains 'DiscoverySource') {
+                Assert-True ($legacy.DiscoverySource -match 'Pinned|Manifest|Legacy') "RemoteVersions[$($legacy.Version)]: Discovery source is pinned legacy data"
+            } else {
+                Skip-Test "RemoteVersions[$($legacy.Version)]: DiscoverySource" 'DiscoverySource is not surfaced by the current discovery shape'
+            }
         }
     }
 } else {

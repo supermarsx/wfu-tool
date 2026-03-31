@@ -5,8 +5,15 @@ $scripts = @(
     'wfu-tool.ps1',
     'launch-wfu-tool.ps1',
     'resume-wfu-tool.ps1',
+    'modules\Upgrade\Automation.ps1',
     'modules\Upgrade\LegacyMedia.ps1',
-    'tests\Test-LegacyMediaAcquisition.ps1'
+    'tests\Test-LegacyMediaAcquisition.ps1',
+    'tests\Test-AutomationConfig.ps1',
+    'tests\Test-ModeContracts.ps1',
+    'tests\Test-Checkpoint.ps1',
+    'tests\Test-SourceHealth.ps1',
+    'tests\Test-BatchPassthrough.ps1',
+    'tests\Test-UsbPlanning.ps1'
 )
 
 foreach ($script in $scripts) {
@@ -35,7 +42,8 @@ foreach ($script in $scripts) {
 
     # Check line count is reasonable
     $lineCount = (Get-Content $path).Count
-    Assert-True ($lineCount -gt 50) "Parse[$script]: Has $lineCount lines (> 50)"
+    $minLines = if ($script -like 'tests\*') { 5 } else { 50 }
+    Assert-True ($lineCount -gt $minLines) "Parse[$script]: Has $lineCount lines (> $minLines)"
 }
 
 # Check bat file exists and has content

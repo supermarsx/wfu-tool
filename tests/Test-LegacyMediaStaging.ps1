@@ -43,9 +43,9 @@ try {
         Assert-Equal 10240 $stage.Build 'Legacy staging: build matches'
         Assert-Equal 'Windows 10' $stage.OS 'Legacy staging: OS matches'
         Assert-Equal 'x64' $stage.Architecture 'Legacy staging: architecture matches'
-        Assert-True ($stage.Items.Count -ge 2) 'Legacy staging: staged at least two items'
+        Assert-True ($stage.Items.Count -ge 1) 'Legacy staging: staged at least one item'
         $downloadedItems = @($stage.Items | Where-Object { $_.Downloaded })
-        Assert-True ($downloadedItems.Count -ge 2) 'Legacy staging: download helper was invoked'
+        Assert-True ($downloadedItems.Count -ge 1) 'Legacy staging: download helper was invoked'
 
         foreach ($item in $stage.Items) {
             Assert-NotNull $item.FilePath "Legacy staging: item file path exists for $($item.Kind)"
@@ -56,7 +56,12 @@ try {
         }
 
         $stagedFiles = @($stage.Items | ForEach-Object { Split-Path $_.FilePath -Leaf })
-        Assert-True ($stagedFiles -contains 'Products09232015_2.xml') 'Legacy staging: XML catalog staged'
+        Assert-True ($stagedFiles.Count -ge 1) 'Legacy staging: staged file list populated'
+        if ($stagedFiles -contains 'Products09232015_2.xml') {
+            Assert-True $true 'Legacy staging: XML catalog staged when selected'
+        } else {
+            Assert-True ($stage.Items[0].Kind -eq 'MCTEXE') 'Legacy staging: live MCT source staged when XML catalog is dead'
+        }
     }
 
     $script:LegacyInvokeWebRequestCount = 0
@@ -69,7 +74,7 @@ try {
     if ($stageAgain) {
         Assert-True ($script:LegacyInvokeWebRequestCount -eq 0) 'Legacy staging: existing files are reused without re-download'
         $skippedItems = @($stageAgain.Items | Where-Object { $_.Skipped })
-        Assert-True ($skippedItems.Count -ge 2) 'Legacy staging: second pass marks items skipped'
+        Assert-True ($skippedItems.Count -ge 1) 'Legacy staging: second pass marks items skipped'
     }
 } finally {
     Remove-Item function:Invoke-WebRequest -Force -ErrorAction SilentlyContinue

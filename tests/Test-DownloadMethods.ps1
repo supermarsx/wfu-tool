@@ -155,7 +155,7 @@ Remove-Item $testDest -Force -ErrorAction SilentlyContinue
 # =============================================================
 Write-Host '    -- File hash verification --' -ForegroundColor DarkGray
 $hashFile = Join-Path $env:TEMP 'WFU_TOOL_HashTest2.bin'
-[byte[]](1..100) | Set-Content $hashFile -Encoding Byte
+[System.IO.File]::WriteAllBytes($hashFile, [byte[]](1..100))
 $sha1 = (Get-FileHash $hashFile -Algorithm SHA1).Hash
 
 $hashOk = Test-FileHash -FilePath $hashFile -ExpectedHash $sha1 -Algorithm SHA1
