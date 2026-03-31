@@ -6,6 +6,8 @@
 #>
 param(
     [string]$ScriptRoot = $PSScriptRoot,
+    [Alias('?')]
+    [switch]$Help,
     [string]$ConfigPath,
     [ValidateSet('Interactive','IsoDownload','UsbFromIso','AutomatedUpgrade','Resume','Headless','CreateUsb','createusb','create_usb')]
     [string]$Mode = 'Interactive',
@@ -43,6 +45,42 @@ param(
     [switch]$SkipAssistant,
     [switch]$SkipWindowsUpdate
 )
+
+function Show-WfuLauncherHelp {
+    Write-Host ''
+    Write-Host 'launch-wfu-tool' -ForegroundColor Cyan
+    Write-Host 'Usage: .\launch-wfu-tool.ps1 [options]' -ForegroundColor White
+    Write-Host ''
+    Write-Host 'This is the interactive/front-door launcher for wfu-tool.' -ForegroundColor DarkGray
+    Write-Host 'It can open the TUI, run headless, create USB media, or load an INI config.' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host 'Common options:' -ForegroundColor Cyan
+    Write-Host '  -Help                         Show this help text'
+    Write-Host '  -Interactive                  Force interactive mode'
+    Write-Host '  -Headless                     Force headless mode'
+    Write-Host '  -Mode <mode>                  Interactive, Headless, Resume, CreateUsb, IsoDownload, UsbFromIso, AutomatedUpgrade'
+    Write-Host '  -ConfigPath <path>            Load an INI config file'
+    Write-Host '  -TargetVersion <version>      Example: W10_22H2, 24H2, 25H2'
+    Write-Host '  -CheckpointPath <path>        Use a specific checkpoint'
+    Write-Host '  -ResumeFromCheckpoint         Resume from checkpoint state'
+    Write-Host ''
+    Write-Host 'Media and USB:' -ForegroundColor Cyan
+    Write-Host '  -CreateUsb                    Build USB media'
+    Write-Host '  -UsbDiskNumber <n>            Target USB disk number'
+    Write-Host '  -UsbDiskId <id>               Target USB disk unique ID'
+    Write-Host '  -KeepIso                      Keep ISO after USB creation'
+    Write-Host ''
+    Write-Host 'Examples:' -ForegroundColor Cyan
+    Write-Host '  .\launch-wfu-tool.ps1'
+    Write-Host '  .\launch-wfu-tool.ps1 -Headless -ConfigPath .\configs\job.ini'
+    Write-Host '  .\launch-wfu-tool.ps1 -Mode CreateUsb -TargetVersion 25H2 -UsbDiskNumber 3'
+    Write-Host ''
+}
+
+if ($Help) {
+    Show-WfuLauncherHelp
+    return
+}
 
 # Verify admin -- works whether dot-sourced or run via -File
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()

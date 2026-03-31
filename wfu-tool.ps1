@@ -56,6 +56,9 @@
 
 [CmdletBinding(SupportsShouldProcess)]
 param(
+    [Alias('?')]
+    [switch]$Help,
+
     [string]$ConfigPath,
 
     [ValidateSet('Interactive','Headless','Resume','CreateUsb','IsoDownload','UsbFromIso','AutomatedUpgrade')]
@@ -113,6 +116,53 @@ param(
     [switch]$SkipAssistant,      # Skip Installation Assistant
     [switch]$SkipWindowsUpdate   # Skip Windows Update COM API
 )
+
+function Show-WfuCliHelp {
+    Write-Host ''
+    Write-Host 'wfu-tool' -ForegroundColor Cyan
+    Write-Host 'Usage: .\wfu-tool.ps1 [options]' -ForegroundColor White
+    Write-Host ''
+    Write-Host 'Common options:' -ForegroundColor Cyan
+    Write-Host '  -Help                         Show this help text'
+    Write-Host '  -Mode <Interactive|Headless|Resume|CreateUsb|IsoDownload|UsbFromIso|AutomatedUpgrade>'
+    Write-Host '  -TargetVersion <version>      Example: W10_22H2, 24H2, 25H2'
+    Write-Host '  -ConfigPath <path>            Load options from an INI file'
+    Write-Host '  -CheckpointPath <path>        Use an explicit checkpoint file'
+    Write-Host '  -ResumeFromCheckpoint         Resume from saved checkpoint state'
+    Write-Host ''
+    Write-Host 'Upgrade behavior:' -ForegroundColor Cyan
+    Write-Host '  -DirectIso                    Jump directly to the target release'
+    Write-Host '  -AllowFallback                Allow fallback methods if ISO/media fails'
+    Write-Host '  -NoReboot                     Do not reboot automatically'
+    Write-Host '  -ForceOnlineUpdate            Prefer online update paths'
+    Write-Host ''
+    Write-Host 'USB/media:' -ForegroundColor Cyan
+    Write-Host '  -CreateUsb                    Build USB media from acquired ISO/media'
+    Write-Host '  -UsbDiskNumber <n>            Target USB disk number'
+    Write-Host '  -UsbDiskId <id>               Target USB disk unique ID'
+    Write-Host '  -KeepIso                      Keep ISO after USB creation'
+    Write-Host '  -UsbPartitionStyle <gpt|mbr>  Partition style for USB media'
+    Write-Host ''
+    Write-Host 'Source selection:' -ForegroundColor Cyan
+    Write-Host '  -PreferredSource <id>         Prefer a source first'
+    Write-Host '  -ForceSource <id>             Use only a specific source'
+    Write-Host '  -AllowDeadSources             Allow explicit selection of dead sources'
+    Write-Host ''
+    Write-Host 'Source IDs:' -ForegroundColor Cyan
+    Write-Host '  WU_DIRECT, ESD_CATALOG, FIDO, MCT, ASSISTANT, WINDOWS_UPDATE'
+    Write-Host '  LEGACY_XML, LEGACY_CAB, LEGACY_MCT_X64, LEGACY_MCT_X86'
+    Write-Host ''
+    Write-Host 'Examples:' -ForegroundColor Cyan
+    Write-Host '  .\wfu-tool.ps1 -Mode Headless -TargetVersion 25H2 -NoReboot'
+    Write-Host '  .\wfu-tool.ps1 -ConfigPath .\configs\job.ini -Mode Headless'
+    Write-Host '  .\wfu-tool.ps1 -Mode CreateUsb -TargetVersion 25H2 -UsbDiskNumber 3'
+    Write-Host ''
+}
+
+if ($Help) {
+    Show-WfuCliHelp
+    return
+}
 
 # Use strict mode but handle errors ourselves -- never let the script die silently
 Set-StrictMode -Version Latest
