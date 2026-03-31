@@ -246,13 +246,32 @@ function Add-WfuReleaseAsset {
     param(
         [hashtable]$Headers,
         [string]$UploadUrl,
-        [string]$Path
+        [string]$Path,
+        [string]$TagName,
+        [string]$Repository
     )
 
     $fileName = Split-Path $Path -Leaf
+    $gh = Get-Command gh -ErrorAction SilentlyContinue
+
+    if ($gh -and -not [string]::IsNullOrWhiteSpace($TagName) -and -not [string]::IsNullOrWhiteSpace($Repository)) {
+        try {
+            & $gh.Source release upload $TagName $Path --repo $Repository --clobber 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                return [pscustomobject]@{
+                    Status = 'Uploaded'
+                    Path   = $Path
+                    Reason = $null
+                }
+            }
+        }
+        catch {
+            # Fall back to the REST upload path below.
+        }
+    }
+
     $assetName = [uri]::EscapeDataString($fileName)
     $assetUri = ($UploadUrl -replace '\{\?name,label\}$', '') + "?name=$assetName"
-    $bytes = [System.IO.File]::ReadAllBytes($Path)
     $headers = @{}
     foreach ($key in $Headers.Keys) {
         $headers[$key] = $Headers[$key]
@@ -373,7 +392,7 @@ foreach ($asset in $artifactList) {
         continue
     }
 
-    $uploaded += Add-WfuReleaseAsset -Headers $headers -UploadUrl $release.upload_url -Path $asset
+    $uploaded += Add-WfuReleaseAsset -Headers $headers -UploadUrl $release.upload_url -Path $asset -TagName $TagName -Repository $repo
 }
 
 $output = [pscustomobject]@{
