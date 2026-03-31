@@ -227,7 +227,7 @@ jobs:
         run: ./devscripts/Package.ps1 -Version $env:WFU_TOOL_PACKAGE_VERSION -OutputRoot $env:WFU_TOOL_PACKAGE_OUTPUT_ROOT -KeepStaging
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wfu-tool-package-ci
           path: ${{ env.WFU_TOOL_PACKAGE_OUTPUT_ROOT }}
@@ -325,7 +325,7 @@ jobs:
           }
 
       - name: Download package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: wfu-tool-package-ci
           path: ${{ runner.temp }}\wfu-tool-package-ci
