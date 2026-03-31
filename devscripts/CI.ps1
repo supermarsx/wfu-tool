@@ -42,7 +42,8 @@ foreach ($script in $scripts) {
         Write-Host "    FAIL: $($script.Name) ($($e.Count) errors)" -ForegroundColor Red
         foreach ($err in $e) { Write-Host "      Line $($err.Extent.StartLineNumber): $($err.Message)" -ForegroundColor Red }
         $parseErrors += $e.Count
-    } else {
+    }
+    else {
         if ($Verbose) { Write-Host "    OK: $($script.Name) ($lines lines, $funcs functions)" -ForegroundColor DarkGray }
     }
 }
@@ -65,7 +66,8 @@ foreach ($dir in @('tests', 'devscripts')) {
 if ($parseErrors -gt 0) {
     Write-Host "    FAILED: $parseErrors parse error(s)" -ForegroundColor Red
     $exitCode = 1
-} else {
+}
+else {
     Write-Host "    PASSED: All scripts parse clean ($totalLines lines, $totalFuncs functions)" -ForegroundColor Green
 }
 
@@ -86,7 +88,8 @@ foreach ($script in $scripts) {
 if ($encodingErrors -gt 0) {
     Write-Host "    FAILED: $encodingErrors file(s) with encoding issues" -ForegroundColor Red
     $exitCode = 1
-} else {
+}
+else {
     Write-Host '    PASSED: All files are pure ASCII' -ForegroundColor Green
 }
 
@@ -107,10 +110,12 @@ if (-not $SkipTests) {
             Write-Host "    FAILED: $($Script:f) test failure(s)" -ForegroundColor Red
             $exitCode = 1
         }
-    } else {
+    }
+    else {
         Write-Host '    Run-ApiTests.ps1 not found -- skipping' -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host '  [3/4] TESTS (skipped)' -ForegroundColor Yellow
 }
 
@@ -123,12 +128,15 @@ if (-not $SkipPackage -and $exitCode -eq 0) {
     $packageScript = Join-Path $PSScriptRoot 'Package.ps1'
     if (Test-Path $packageScript) {
         & $packageScript
-    } else {
+    }
+    else {
         Write-Host '    Package.ps1 not found -- skipping' -ForegroundColor Yellow
     }
-} elseif ($exitCode -ne 0) {
+}
+elseif ($exitCode -ne 0) {
     Write-Host '  [4/4] PACKAGE (skipped due to earlier failures)' -ForegroundColor Yellow
-} else {
+}
+else {
     Write-Host '  [4/4] PACKAGE (skipped)' -ForegroundColor Yellow
 }
 
@@ -139,7 +147,8 @@ Write-Host ''
 Write-Host '  ============================================' -ForegroundColor Cyan
 if ($exitCode -eq 0) {
     Write-Host '  CI PASSED' -ForegroundColor Green
-} else {
+}
+else {
     Write-Host '  CI FAILED' -ForegroundColor Red
 }
 Write-Host "  Parse: $parseErrors errors | Encoding: $encodingErrors issues"

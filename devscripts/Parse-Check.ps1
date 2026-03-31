@@ -40,7 +40,8 @@ foreach ($script in $scripts) {
 Write-Host ''
 if ($totalErrors -eq 0) {
     Write-Host '  All scripts parse clean.' -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  $totalErrors total error(s) found." -ForegroundColor Red
 }
 Write-Host ''

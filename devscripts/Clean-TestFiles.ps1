@@ -71,7 +71,8 @@ if (Test-Path $ifeoKey) {
         Remove-Item $ifeoKey -Recurse -Force -ErrorAction SilentlyContinue
         Write-Host "  Removed: IFEO SetupHost.exe hook" -ForegroundColor DarkGray
         $cleaned++
-    } else {
+    }
+    else {
         Write-Host "  IFEO hook exists but needs admin to remove" -ForegroundColor Yellow
     }
 }
@@ -84,7 +85,8 @@ try {
         Write-Host '  Removed: wfu-tool-resume scheduled task' -ForegroundColor DarkGray
         $cleaned++
     }
-} catch { }
+}
+catch { }
 
 # Resume registry key
 $resumeKey = 'HKLM:\SOFTWARE\wfu-tool'

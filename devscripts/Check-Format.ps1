@@ -25,7 +25,8 @@ function Get-TrackedPowerShellFiles {
                         ForEach-Object { Join-Path $Root $_ }
                 )
             }
-        } catch {
+        }
+        catch {
             # Fall back to filesystem enumeration below.
         }
     }
@@ -45,7 +46,8 @@ function Normalize-Newlines {
 
 try {
     Import-Module PSScriptAnalyzer -ErrorAction Stop
-} catch {
+}
+catch {
     Write-Error "PSScriptAnalyzer is required for formatting checks: $($_.Exception.Message)"
     exit 1
 }

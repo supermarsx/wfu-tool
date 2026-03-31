@@ -68,12 +68,12 @@ function Resolve-WfuArtifactChecksumUrl {
 
 if (-not (Test-WfuTruthy -Value $env:ENABLE_CHOCO)) {
     $result = [pscustomobject]@{
-        Status    = 'Skipped'
-        Reason    = 'Chocolatey publishing disabled'
-        Package   = $null
-        PackageId = $PackageId
+        Status     = 'Skipped'
+        Reason     = 'Chocolatey publishing disabled'
+        Package    = $null
+        PackageId  = $PackageId
         OutputRoot = $OutputRoot
-        Published = $false
+        Published  = $false
     }
     if ($PassThru) { $result }
     return
@@ -81,12 +81,12 @@ if (-not (Test-WfuTruthy -Value $env:ENABLE_CHOCO)) {
 
 if ([string]::IsNullOrWhiteSpace($Token)) {
     $result = [pscustomobject]@{
-        Status    = 'Skipped'
-        Reason    = 'Chocolatey API key not available'
-        Package   = $null
-        PackageId = $PackageId
+        Status     = 'Skipped'
+        Reason     = 'Chocolatey API key not available'
+        Package    = $null
+        PackageId  = $PackageId
         OutputRoot = $OutputRoot
-        Published = $false
+        Published  = $false
     }
     if ($PassThru) { $result }
     return
@@ -109,12 +109,12 @@ if ([string]::IsNullOrWhiteSpace($ChecksumUrl) -and -not [string]::IsNullOrWhite
 
 if ([string]::IsNullOrWhiteSpace($Version) -or [string]::IsNullOrWhiteSpace($PackageUrl)) {
     $result = [pscustomobject]@{
-        Status    = 'Skipped'
-        Reason    = 'Missing version or package URL'
-        Package   = $null
-        PackageId = $PackageId
+        Status     = 'Skipped'
+        Reason     = 'Missing version or package URL'
+        Package    = $null
+        PackageId  = $PackageId
         OutputRoot = $OutputRoot
-        Published = $false
+        Published  = $false
     }
     if ($PassThru) { $result }
     return
@@ -169,7 +169,8 @@ try {
     if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
     Compress-Archive -Path (Join-Path $packageRoot "$PackageId.nuspec"), (Join-Path $packageRoot 'tools') -DestinationPath $tempZip -Force
     Copy-Item -LiteralPath $tempZip -Destination $nupkgPath -Force
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -182,13 +183,13 @@ if ($Push -and (Get-Command choco -ErrorAction SilentlyContinue)) {
 }
 
 $result = [pscustomobject]@{
-    Status    = $(if ($published) { 'Published' } else { 'Built' })
-    Reason    = $(if ($published) { 'Chocolatey push succeeded' } else { 'Chocolatey package built locally' })
-    Package   = $nupkgPath
-    PackageId = $PackageId
-    OutputRoot = $packageRoot
-    Published = $published
-    PackageUrl = $PackageUrl
+    Status      = $(if ($published) { 'Published' } else { 'Built' })
+    Reason      = $(if ($published) { 'Chocolatey push succeeded' } else { 'Chocolatey package built locally' })
+    Package     = $nupkgPath
+    PackageId   = $PackageId
+    OutputRoot  = $packageRoot
+    Published   = $published
+    PackageUrl  = $PackageUrl
     ChecksumUrl = $ChecksumUrl
 }
 

@@ -25,7 +25,8 @@ function Get-WfuGitShortSha {
         if ($LASTEXITCODE -eq 0 -and $sha) {
             return $sha.Trim()
         }
-    } catch {
+    }
+    catch {
     }
 
     return 'local'
@@ -84,8 +85,8 @@ function New-WfuFileRecord {
 
     [pscustomobject]@{
         Path      = $relative
-        SizeBytes  = [int64]$item.Length
-        Sha256     = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash
+        SizeBytes = [int64]$item.Length
+        Sha256    = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash
     }
 }
 
@@ -216,35 +217,35 @@ if (-not $NoZip) {
 }
 
 $manifest = [pscustomobject]@{
-    Version      = $package.Version
-    Tag          = $package.Tag
-    PackageName  = $package.PackageName
-    CreatedUtc   = $createdUtc
-    SourceRoot   = $projectRoot
-    StagingPath  = $packageRoot
-    ZipPath      = if ($NoZip) { $null } else { $zipPath }
-    ZipSha256    = if ($zipHash) { $zipHash.Hash } else { $null }
-    Sha256Path   = if ($NoZip) { $null } else { $shaPath }
-    FileCount    = $inventory.FileCount
-    TotalBytes   = $inventory.TotalBytes
-    Files        = $inventory.Files
+    Version     = $package.Version
+    Tag         = $package.Tag
+    PackageName = $package.PackageName
+    CreatedUtc  = $createdUtc
+    SourceRoot  = $projectRoot
+    StagingPath = $packageRoot
+    ZipPath     = if ($NoZip) { $null } else { $zipPath }
+    ZipSha256   = if ($zipHash) { $zipHash.Hash } else { $null }
+    Sha256Path  = if ($NoZip) { $null } else { $shaPath }
+    FileCount   = $inventory.FileCount
+    TotalBytes  = $inventory.TotalBytes
+    Files       = $inventory.Files
 }
 
 $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 
 $result = [pscustomobject]@{
-    Version     = $package.Version
-    Tag         = $package.Tag
-    PackageName = $package.PackageName
-    OutputRoot  = $OutputRoot
-    StagingPath = $packageRoot
-    ZipPath     = if ($NoZip) { $null } else { $zipPath }
-    Sha256Path  = if ($NoZip) { $null } else { $shaPath }
+    Version      = $package.Version
+    Tag          = $package.Tag
+    PackageName  = $package.PackageName
+    OutputRoot   = $OutputRoot
+    StagingPath  = $packageRoot
+    ZipPath      = if ($NoZip) { $null } else { $zipPath }
+    Sha256Path   = if ($NoZip) { $null } else { $shaPath }
     ManifestPath = $manifestPath
-    ZipSha256   = if ($zipHash) { $zipHash.Hash } else { $null }
-    FileCount   = $inventory.FileCount
-    TotalBytes  = $inventory.TotalBytes
-    KeptStaging = [bool]$KeepStaging
+    ZipSha256    = if ($zipHash) { $zipHash.Hash } else { $null }
+    FileCount    = $inventory.FileCount
+    TotalBytes   = $inventory.TotalBytes
+    KeptStaging  = [bool]$KeepStaging
 }
 
 Write-Host ''

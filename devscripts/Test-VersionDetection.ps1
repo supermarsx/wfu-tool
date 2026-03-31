@@ -31,7 +31,8 @@ try {
         -LogPath (Join-Path $env:TEMP 'WFU_TOOL_VerTest.log') -DownloadPath (Join-Path $env:TEMP 'WFU_TOOL_VerTestDL') `
         -SkipBypasses -SkipBlockerRemoval -SkipTelemetry -SkipRepair `
         -SkipCumulativeUpdates -SkipNetworkCheck -SkipDiskCheck 2>$null
-} catch { }
+}
+catch { }
 
 # Engine detection
 Write-Host '  Engine Detection (Get-CurrentWindowsVersion):' -ForegroundColor Yellow

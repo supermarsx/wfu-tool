@@ -37,7 +37,8 @@ function Test-WfuGitAvailable {
     try {
         & git -C $Root rev-parse --is-inside-work-tree 2>$null | Out-Null
         return ($LASTEXITCODE -eq 0)
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -98,8 +99,8 @@ function Get-WfuGitHubHeaders {
     param([string]$AccessToken)
 
     return @{
-        Authorization = "Bearer $AccessToken"
-        Accept        = 'application/vnd.github+json'
+        Authorization          = "Bearer $AccessToken"
+        Accept                 = 'application/vnd.github+json'
         'X-GitHub-Api-Version' = '2022-11-28'
     }
 }
@@ -198,7 +199,8 @@ function Test-WfuReleaseExists {
     try {
         $null = Invoke-WfuGitHubRest -Method GET -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers
         return $true
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -212,7 +214,8 @@ function Get-WfuReleaseByTag {
 
     try {
         return Invoke-WfuGitHubRest -Method GET -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -228,10 +231,10 @@ function New-WfuRelease {
     )
 
     $body = @{
-        tag_name    = $Tag
-        name        = $Name
-        draft       = $Draft
-        prerelease  = $Prerelease
+        tag_name               = $Tag
+        name                   = $Name
+        draft                  = $Draft
+        prerelease             = $Prerelease
         generate_release_notes = $true
     }
 
@@ -257,7 +260,8 @@ function Add-WfuReleaseAsset {
 
     try {
         Invoke-RestMethod -Method POST -Uri $assetUri -Headers $headers -Body $bytes -ContentType 'application/octet-stream' -ErrorAction Stop
-    } catch {
+    }
+    catch {
         if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 422) {
             return [pscustomobject]@{
                 Status = 'Skipped'
@@ -273,13 +277,13 @@ function Add-WfuReleaseAsset {
 $repo = Get-WfuRepositorySlug -Root $RepositoryRoot -ExplicitRepository $Repository
 if ([string]::IsNullOrWhiteSpace($repo)) {
     $result = [pscustomobject]@{
-        Status      = 'Skipped'
-        Reason      = 'Repository context not available'
-        Repository  = $null
-        Version     = $Version
-        TagName     = $TagName
-        ReleaseUrl  = $null
-        Assets      = @()
+        Status     = 'Skipped'
+        Reason     = 'Repository context not available'
+        Repository = $null
+        Version    = $Version
+        TagName    = $TagName
+        ReleaseUrl = $null
+        Assets     = @()
     }
     if ($PassThru) { $result }
     return
@@ -287,13 +291,13 @@ if ([string]::IsNullOrWhiteSpace($repo)) {
 
 if ([string]::IsNullOrWhiteSpace($Token)) {
     $result = [pscustomobject]@{
-        Status      = 'Skipped'
-        Reason      = 'GitHub token not available'
-        Repository  = $repo
-        Version     = $Version
-        TagName     = $TagName
-        ReleaseUrl  = $null
-        Assets      = @()
+        Status     = 'Skipped'
+        Reason     = 'GitHub token not available'
+        Repository = $repo
+        Version    = $Version
+        TagName    = $TagName
+        ReleaseUrl = $null
+        Assets     = @()
     }
     if ($PassThru) { $result }
     return
@@ -303,13 +307,13 @@ if ([string]::IsNullOrWhiteSpace($Version) -or [string]::IsNullOrWhiteSpace($Tag
     $releaseInfo = & (Join-Path $PSScriptRoot 'Get-ReleaseVersion.ps1') -RepositoryRoot $RepositoryRoot
     if ($releaseInfo.Status -ne 'Resolved') {
         $result = [pscustomobject]@{
-            Status      = 'Skipped'
-            Reason      = 'Unable to resolve release version'
-            Repository  = $repo
-            Version     = $Version
-            TagName     = $TagName
-            ReleaseUrl  = $null
-            Assets      = @()
+            Status     = 'Skipped'
+            Reason     = 'Unable to resolve release version'
+            Repository = $repo
+            Version    = $Version
+            TagName    = $TagName
+            ReleaseUrl = $null
+            Assets     = @()
         }
         if ($PassThru) { $result }
         return
@@ -326,13 +330,13 @@ if ([string]::IsNullOrWhiteSpace($ReleaseName)) {
 $artifactList = Resolve-WfuReleaseArtifacts -Root $RepositoryRoot -ReleaseVersion $Version -ExplicitArtifactRoot $ArtifactRoot -ExplicitArtifactPath $ArtifactPath -ExplicitChecksumPath $ChecksumPath -ExplicitManifestPath $ManifestPath
 if (-not $artifactList -or $artifactList.Count -eq 0) {
     $result = [pscustomobject]@{
-        Status      = 'Skipped'
-        Reason      = 'No release artifacts found'
-        Repository  = $repo
-        Version     = $Version
-        TagName     = $TagName
-        ReleaseUrl  = $null
-        Assets      = @()
+        Status     = 'Skipped'
+        Reason     = 'No release artifacts found'
+        Repository = $repo
+        Version    = $Version
+        TagName    = $TagName
+        ReleaseUrl = $null
+        Assets     = @()
     }
     if ($PassThru) { $result }
     return
@@ -367,13 +371,13 @@ foreach ($asset in $artifactList) {
 }
 
 $output = [pscustomobject]@{
-    Status      = 'Published'
-    Repository  = $repo
-    Version     = $Version
-    TagName     = $TagName
-    ReleaseUrl  = $release.html_url
-    UploadUrl   = $release.upload_url
-    Assets      = $uploaded
+    Status     = 'Published'
+    Repository = $repo
+    Version    = $Version
+    TagName    = $TagName
+    ReleaseUrl = $release.html_url
+    UploadUrl  = $release.upload_url
+    Assets     = $uploaded
 }
 
 if ($PassThru) {

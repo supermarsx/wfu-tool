@@ -43,7 +43,8 @@ try {
     if ($LASTEXITCODE -ne 0 -or -not $shortSha) {
         throw 'Unable to read short HEAD commit'
     }
-} catch {
+}
+catch {
     $headSha = $null
     $shortSha = 'local'
     $source = 'Fallback'
@@ -60,7 +61,8 @@ try {
             }
         }
     }
-} catch {
+}
+catch {
     $headTags = @()
 }
 
@@ -93,7 +95,8 @@ try {
             }
         }
     }
-} catch {
+}
+catch {
     $yearTags = @()
 }
 

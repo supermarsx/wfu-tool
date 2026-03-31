@@ -26,7 +26,8 @@ function Get-TrackedPowerShellFiles {
                         ForEach-Object { Join-Path $Root $_ }
                 )
             }
-        } catch {
+        }
+        catch {
             # Fall back to filesystem enumeration below.
         }
     }
@@ -39,7 +40,8 @@ function Get-TrackedPowerShellFiles {
 
 try {
     Import-Module PSScriptAnalyzer -ErrorAction Stop
-} catch {
+}
+catch {
     Write-Error "PSScriptAnalyzer is required for lint checks: $($_.Exception.Message)"
     exit 1
 }
@@ -78,7 +80,8 @@ if ($errors.Count -gt 0) {
 $warningCount = @($diagnostics | Where-Object { $_.Severity -eq 'Warning' }).Count
 if ($warningCount -gt 0) {
     Write-Host "Lint passed with $warningCount warning(s)." -ForegroundColor Yellow
-} else {
+}
+else {
     Write-Host "Lint passed for $($files.Count) file(s)." -ForegroundColor Green
 }
 

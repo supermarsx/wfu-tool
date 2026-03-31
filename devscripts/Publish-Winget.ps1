@@ -214,7 +214,8 @@ if ($CreatePullRequest -and (Get-Command gh -ErrorAction SilentlyContinue)) {
                     }
                 }
             }
-        } catch {
+        }
+        catch {
             # Keep the script safe to no-op when PR automation is not available.
         }
     }

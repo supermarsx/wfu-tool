@@ -23,9 +23,9 @@ if (-not (Test-Path -LiteralPath $packageScript)) {
 }
 
 $packageArgs = @{
-    NoZip = $true
+    NoZip       = $true
     KeepStaging = $true
-    OutputRoot = $OutputRoot
+    OutputRoot  = $OutputRoot
 }
 if ($Version) {
     $packageArgs.Version = $Version
@@ -98,18 +98,19 @@ try {
         -DownloadPath (Join-Path $stagingPath 'downloads') `
         -SkipBypasses -SkipBlockerRemoval -SkipTelemetry -SkipRepair `
         -SkipCumulativeUpdates -SkipNetworkCheck -SkipDiskCheck -MaxRetries 1
-} finally {
+}
+finally {
     $env:WFU_TOOL_TEST_MODE = $oldTestMode
 }
 
 $result = [pscustomobject]@{
-    Version     = $package.Version
-    PackageName = $package.PackageName
-    OutputRoot  = $OutputRoot
-    StagingPath = $stagingPath
+    Version      = $package.Version
+    PackageName  = $package.PackageName
+    OutputRoot   = $OutputRoot
+    StagingPath  = $stagingPath
     ManifestPath = $manifestPath
-    ParsedFiles = $parseTargets.Count
-    KeptStaging = [bool]$KeepStaging
+    ParsedFiles  = $parseTargets.Count
+    KeptStaging  = [bool]$KeepStaging
 }
 
 Write-Host ''

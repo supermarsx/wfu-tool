@@ -26,7 +26,8 @@ function Get-TrackedPowerShellFiles {
                         ForEach-Object { Join-Path $Root $_ }
                 )
             }
-        } catch {
+        }
+        catch {
             # Fall back to filesystem enumeration below.
         }
     }
@@ -69,7 +70,8 @@ function Invoke-SafeBootstrap {
     $shellCommand = Get-Command pwsh -ErrorAction SilentlyContinue
     if ($shellCommand) {
         $pwsh = $shellCommand.Source
-    } else {
+    }
+    else {
         $pwsh = (Get-Command powershell -ErrorAction Stop).Source
     }
     $oldTestMode = $env:WFU_TOOL_TEST_MODE
@@ -107,8 +109,8 @@ foreach ($file in $trackedFiles) {
 
 $bootstrapChecks = @(
     @{
-        Label = 'wfu-tool.ps1'
-        Script = (Join-Path $projectRoot 'wfu-tool.ps1')
+        Label     = 'wfu-tool.ps1'
+        Script    = (Join-Path $projectRoot 'wfu-tool.ps1')
         Arguments = @(
             '-Mode', 'Headless',
             '-TargetVersion', '25H2',
@@ -131,8 +133,8 @@ $bootstrapChecks = @(
         )
     }
     @{
-        Label = 'launch-wfu-tool.ps1'
-        Script = (Join-Path $projectRoot 'launch-wfu-tool.ps1')
+        Label     = 'launch-wfu-tool.ps1'
+        Script    = (Join-Path $projectRoot 'launch-wfu-tool.ps1')
         Arguments = @(
             '-Mode', 'Headless',
             '-TargetVersion', '25H2',
@@ -155,8 +157,8 @@ $bootstrapChecks = @(
         )
     }
     @{
-        Label = 'resume-wfu-tool.ps1'
-        Script = (Join-Path $projectRoot 'resume-wfu-tool.ps1')
+        Label     = 'resume-wfu-tool.ps1'
+        Script    = (Join-Path $projectRoot 'resume-wfu-tool.ps1')
         Arguments = @(
             '-ScriptRoot', $projectRoot,
             '-TargetVersion', '25H2',

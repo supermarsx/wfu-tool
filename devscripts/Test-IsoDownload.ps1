@@ -41,10 +41,12 @@ if ($isoUrl) {
         $head = Invoke-WebRequest -Uri $isoUrl -Method Head -UseBasicParsing -TimeoutSec 10
         $sizeMB = [math]::Round([long]$head.Headers['Content-Length'] / 1MB)
         Write-Host "      Reachable: YES ($sizeMB MB)" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "      Reachable: NO ($_)" -ForegroundColor Red
     }
-} else {
+}
+else {
     Write-Host '      FAILED (Sentinel may have blocked)' -ForegroundColor Red
 }
 
@@ -61,10 +63,12 @@ if ($esdInfo) {
     try {
         $head = Invoke-WebRequest -Uri $esdInfo.Url -Method Head -UseBasicParsing -TimeoutSec 10
         Write-Host "      Reachable: YES" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "      Reachable: NO ($_)" -ForegroundColor Red
     }
-} else {
+}
+else {
     Write-Host '      FAILED (catalog download or parse error)' -ForegroundColor Red
 }
 
@@ -75,10 +79,12 @@ $mctUrl = 'https://go.microsoft.com/fwlink/?linkid=2156295'
 try {
     $head = Invoke-WebRequest -Uri $mctUrl -Method Head -UseBasicParsing -TimeoutSec 10 -MaximumRedirection 0 -ErrorAction SilentlyContinue
     Write-Host "      MCT download URL: reachable (redirects to actual EXE)" -ForegroundColor Green
-} catch {
+}
+catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 301 -or $_.Exception.Response.StatusCode.value__ -eq 302) {
         Write-Host "      MCT download URL: reachable (302 redirect)" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "      MCT download URL: unreachable ($_)" -ForegroundColor Red
     }
 }
@@ -91,10 +97,12 @@ try {
     if ($release) {
         Write-Host "      Latest 25H2: $($release.Name)" -ForegroundColor Green
         Write-Host "      Build: $($release.LatestBuild)" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host '      No release metadata found' -ForegroundColor Red
     }
-} catch {
+}
+catch {
     Write-Host "      Direct metadata discovery failed: $_" -ForegroundColor Red
 }
 
