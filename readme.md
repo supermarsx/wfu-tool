@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./wfu-logo.png" alt="wfu-tool logo" width="150" height="150" />
+  <img src="./wfu-logo.png" alt="wfu-tool logo" width="300" height="300" />
 </p>
 
 <h1 align="center">wfu-tool</h1>
