@@ -23,6 +23,7 @@ defaults:
 env:
   WFU_TOOL_CI_MODE: '1'
   POWERSHELL_TELEMETRY_OPTOUT: '1'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   format:
@@ -30,10 +31,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -61,10 +62,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -92,10 +93,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -124,10 +125,10 @@ jobs:
     needs: [format, type, lint]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -156,10 +157,10 @@ jobs:
     needs: [test]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -188,10 +189,10 @@ jobs:
     needs: [build_test]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -247,12 +248,12 @@ jobs:
       release_name: ${{ steps.compute.outputs.release_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -298,12 +299,12 @@ jobs:
       release_name: ${{ needs.release_version.outputs.release_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -356,12 +357,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
@@ -400,12 +401,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Restore PowerShell module cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\Documents\PowerShell\Modules
           key: ${{ runner.os }}-psmodules-${{ hashFiles('**/*.ps1', '**/*.psm1', '**/*.psd1') }}
