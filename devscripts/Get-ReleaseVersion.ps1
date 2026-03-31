@@ -4,7 +4,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$RepositoryRoot = (Split-Path $PSScriptRoot -Parent)
+    [string]$RepositoryRoot = $(if ($PSScriptRoot) { Split-Path $PSScriptRoot -Parent } else { (Get-Location).Path })
 )
 
 Set-StrictMode -Version Latest
@@ -70,10 +70,12 @@ if ($headTags.Count -gt 0) {
     $selected = $headTags | Sort-Object Counter -Descending | Select-Object -First 1
     $existingTags = @($headTags | ForEach-Object { $_.Tag })
     [pscustomobject]@{
+        Status       = 'Resolved'
         Year         = $utcYear
         Counter      = $selected.Counter
         Version      = "$utcYear.$($selected.Counter)"
         Tag          = $selected.Tag
+        TagName      = $selected.Tag
         Commit       = $headSha
         CommitShort  = $shortSha
         Source       = 'CommitTag'
@@ -112,10 +114,12 @@ $version = "$utcYear.$nextCounter"
 $tagName = "v$version"
 
 [pscustomobject]@{
+    Status       = 'Resolved'
     Year         = $utcYear
     Counter      = $nextCounter
     Version      = $version
     Tag          = $tagName
+    TagName      = $tagName
     Commit       = $headSha
     CommitShort  = $shortSha
     Source       = $source
