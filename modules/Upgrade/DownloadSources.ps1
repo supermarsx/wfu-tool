@@ -34,11 +34,16 @@ function Get-LegacyWindows10MediaManifest {
     $manifest = Get-LegacyMediaManifest
     return @(
         $manifest | ForEach-Object {
+            $sources = @(Get-LegacyMediaSourceDescriptors -Version $_.Version)
+            $autoEligibleSources = @($sources | Where-Object { $_.AutoEligible })
+            $preferredSource = if ($autoEligibleSources.Count -gt 0) { $autoEligibleSources[0] } elseif ($sources.Count -gt 0) { $sources[0] } else { $null }
             $supportsCatalog = [bool]$_.CatalogUrl
             $supportsMct = [bool]($_.PreferredMctUrl -or $_.MctUrl -or $_.MctUrl32)
             $supportsWu = $_.Version -in @('W10_21H2', 'W10_22H2')
             $supportsFido = $_.Version -in @('W10_20H2', 'W10_21H2', 'W10_22H2')
             $name = if ($_.PSObject.Properties.Name -contains 'Name' -and $_.Name) { $_.Name } else { "Windows 10 $($_.DisplayVersion) x64" }
+            $health = if ($preferredSource) { $preferredSource.Health } else { 'unknown' }
+            $healthReason = if ($preferredSource) { $preferredSource.HealthReason } else { '' }
             [pscustomobject]@{
                 Version            = $_.Version
                 Build              = $_.Build
@@ -48,11 +53,18 @@ function Get-LegacyWindows10MediaManifest {
                 Source             = 'Legacy Manifest'
                 SourceFamily       = 'LegacyManifest'
                 DiscoverySource    = 'Pinned Manifest'
+                SourceId           = if ($preferredSource) { $preferredSource.SourceId } else { $null }
+                Health             = $health
+                HealthReason       = $healthReason
+                Selectable         = ($sources.Count -gt 0)
+                AutoEligible       = ($autoEligibleSources.Count -gt 0)
                 Available          = $true
                 SupportsWU         = $supportsWu
                 SupportsFido       = $supportsFido
                 SupportsCatalog    = $supportsCatalog
                 SupportsMct        = $supportsMct
+                SourceIds          = @($sources | ForEach-Object { $_.SourceId } | Where-Object { $_ })
+                Sources            = @($sources)
             }
         }
     )
@@ -98,7 +110,50 @@ function Add-UniqueRemoteVersion {
         return
     }
 
-    if ($List | Where-Object { [string]$_.Version -eq $version }) {
+    $existing = $List | Where-Object { [string]$_.Version -eq $version } | Select-Object -First 1
+    if ($existing) {
+        if ($Item.PSObject.Properties.Name -contains 'Sources' -and $Item.Sources) {
+            $existingSources = @()
+            if ($existing.PSObject.Properties.Name -contains 'Sources' -and $existing.Sources) {
+                $existingSources = @($existing.Sources)
+            }
+            foreach ($source in @($Item.Sources)) {
+                if (-not $source) { continue }
+                $sourceId = if ($source.PSObject.Properties.Name -contains 'SourceId') { $source.SourceId } else { $null }
+                $sourceUrl = if ($source.PSObject.Properties.Name -contains 'Url') { $source.Url } else { $null }
+                $duplicate = $false
+                foreach ($existingSource in $existingSources) {
+                    $existingSourceId = if ($existingSource.PSObject.Properties.Name -contains 'SourceId') { $existingSource.SourceId } else { $null }
+                    $existingSourceUrl = if ($existingSource.PSObject.Properties.Name -contains 'Url') { $existingSource.Url } else { $null }
+                    if ($sourceId -and $existingSourceId -and $sourceId -eq $existingSourceId -and $sourceUrl -eq $existingSourceUrl) {
+                        $duplicate = $true
+                        break
+                    }
+                    if (-not $sourceId -and $sourceUrl -and $sourceUrl -eq $existingSourceUrl) {
+                        $duplicate = $true
+                        break
+                    }
+                }
+                if (-not $duplicate) {
+                    $existingSources += $source
+                }
+            }
+            if ($existing.PSObject.Properties.Name -contains 'Sources') {
+                $existing.Sources = @($existingSources)
+            } else {
+                $existing | Add-Member -NotePropertyName Sources -NotePropertyValue @($existingSources) -Force
+            }
+        }
+
+        foreach ($propName in @('SourceId','Health','HealthReason','Selectable','AutoEligible','SourceIds')) {
+            if ($Item.PSObject.Properties.Name -contains $propName) {
+                if ($existing.PSObject.Properties.Name -contains $propName) {
+                    $existing.$propName = $Item.$propName
+                } else {
+                    $existing | Add-Member -NotePropertyName $propName -NotePropertyValue $Item.$propName -Force
+                }
+            }
+        }
         return $false
     }
 

@@ -1,5 +1,15 @@
 # Core helpers extracted from wfu-tool.ps1
 
+function Get-ScriptScopedValue {
+    param([string]$Name)
+
+    $var = Get-Variable -Scope Script -Name $Name -ErrorAction SilentlyContinue
+    if ($null -eq $var) {
+        return $null
+    }
+    return $var.Value
+}
+
 function Write-Log {
     param(
         [string]$Message,
@@ -11,7 +21,7 @@ function Write-Log {
     try { Add-Content -Path $LogPath -Value $entry -ErrorAction SilentlyContinue } catch { }
 
     # If a phase spinner is active, move to next line first so log doesn't overwrite it
-    if ($Script:PhaseStartTime) {
+    if (Get-ScriptScopedValue 'PhaseStartTime') {
         Write-Host ''  # newline after the spinner's -NoNewline
     }
 
@@ -34,9 +44,11 @@ function Write-Phase {
     param([string]$Message)
 
     # Close previous phase if any
-    if ($Script:PhaseStartTime) {
-        $secs = [math]::Round(((Get-Date) - $Script:PhaseStartTime).TotalSeconds)
-        Write-Host "`r  $([char]0x2713) $($Script:PhaseMessage) [${secs}s]       " -ForegroundColor Green
+    $phaseStart = Get-ScriptScopedValue 'PhaseStartTime'
+    $phaseMessage = Get-ScriptScopedValue 'PhaseMessage'
+    if ($phaseStart) {
+        $secs = [math]::Round(((Get-Date) - $phaseStart).TotalSeconds)
+        Write-Host "`r  $([char]0x2713) $phaseMessage [${secs}s]       " -ForegroundColor Green
     }
 
     # Start new phase
@@ -60,10 +72,11 @@ function Complete-Phase {
         [switch]$Fail,
         [string]$Message  # Optional override message
     )
-    if (-not $Script:PhaseStartTime) { return }
+    $phaseStart = Get-ScriptScopedValue 'PhaseStartTime'
+    if (-not $phaseStart) { return }
 
-    $secs = [math]::Round(((Get-Date) - $Script:PhaseStartTime).TotalSeconds)
-    $msg = if ($Message) { $Message } else { $Script:PhaseMessage }
+    $secs = [math]::Round(((Get-Date) - $phaseStart).TotalSeconds)
+    $msg = if ($Message) { $Message } else { (Get-ScriptScopedValue 'PhaseMessage') }
 
     if ($Fail) {
         Write-Host "`r  X $msg [${secs}s]       " -ForegroundColor Red

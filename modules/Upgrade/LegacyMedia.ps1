@@ -24,7 +24,12 @@ function New-LegacyMediaSourceDescriptor {
         [string]$Architecture = 'neutral',
         [string]$FileName = '',
         [string]$Notes = '',
-        [string]$Confidence = 'Known'
+        [string]$Confidence = 'Known',
+        [string]$SourceId = '',
+        [string]$Health = 'healthy',
+        [bool]$Selectable = $true,
+        [bool]$AutoEligible = $true,
+        [string]$HealthReason = ''
     )
 
     [pscustomobject]@{
@@ -38,6 +43,115 @@ function New-LegacyMediaSourceDescriptor {
         Architecture   = $Architecture
         Notes          = $Notes
         Confidence     = $Confidence
+        SourceId       = $SourceId
+        Health         = $Health
+        Selectable     = $Selectable
+        AutoEligible   = $AutoEligible
+        HealthReason   = $HealthReason
+    }
+}
+
+function Get-LegacyMediaSourceId {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('CAB','XML','MCTEXE')]
+        [string]$Kind,
+
+        [ValidateSet('x64','x86','neutral')]
+        [string]$Architecture = 'neutral'
+    )
+
+    switch ($Kind) {
+        'XML'   { return 'LEGACY_XML' }
+        'CAB'   { return 'LEGACY_CAB' }
+        'MCTEXE' {
+            if ($Architecture -eq 'x86') { return 'LEGACY_MCT_X86' }
+            return 'LEGACY_MCT_X64'
+        }
+        default { return 'LEGACY_UNKNOWN' }
+    }
+}
+
+function Get-LegacyMediaSourceHealth {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [psobject]$Spec,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('CAB','XML','MCTEXE')]
+        [string]$Kind,
+
+        [ValidateSet('x64','x86','neutral')]
+        [string]$Architecture = 'neutral'
+    )
+
+    $health = 'healthy'
+    $reason = ''
+
+    switch ($Spec.Version) {
+        'W10_1507' {
+            if ($Kind -eq 'XML') {
+                $health = 'dead'
+                $reason = 'Legacy XML catalog host no longer resolves.'
+            }
+        }
+        'W10_1511' {
+            if ($Kind -eq 'XML') {
+                $health = 'dead'
+                $reason = 'Legacy XML catalog host no longer resolves.'
+            }
+        }
+        'W10_1607' {
+            if ($Kind -eq 'CAB') {
+                $health = 'dead'
+                $reason = 'Legacy CAB catalog host no longer resolves.'
+            }
+        }
+        'W10_1703' {
+            if ($Kind -eq 'CAB') {
+                $health = 'dead'
+                $reason = 'Legacy CAB catalog returns 404 on current endpoints.'
+            }
+        }
+        'W10_1709' {
+            if ($Kind -eq 'CAB') {
+                $health = 'dead'
+                $reason = 'Legacy CAB catalog returns 404 on current endpoints.'
+            }
+        }
+        'W10_1803' {
+            if ($Kind -eq 'MCTEXE') {
+                $health = 'dead'
+                $reason = 'Pinned MCT URL currently returns HTTP 400.'
+            }
+        }
+        'W10_1809' {
+            if ($Kind -eq 'MCTEXE') {
+                $health = 'dead'
+                $reason = 'Pinned MCT URL currently returns HTTP 400.'
+            }
+        }
+        'W10_1903' {
+            if ($Kind -eq 'MCTEXE') {
+                $health = 'dead'
+                $reason = 'Pinned MCT URL currently returns HTTP 400.'
+            }
+        }
+        'W10_2004' {
+            if ($Kind -eq 'MCTEXE') {
+                $health = 'dead'
+                $reason = 'Pinned MCT URL currently returns HTTP 400.'
+            }
+        }
+    }
+
+    [pscustomobject]@{
+        Health       = $health
+        Reason       = $reason
+        Selectable   = $true
+        AutoEligible = ($health -ne 'dead')
     }
 }
 
@@ -80,6 +194,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1507X64
             MctUrl32                = $mct1507X86
             PreferredMctUrl         = $mct1507X64
+            CatalogHealth           = 'dead'
+            CatalogHealthReason     = 'Legacy XML catalog host no longer resolves.'
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Initial Windows 10 release catalog.'
         }
         [pscustomobject]@{
@@ -97,6 +215,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mctGeneric
             MctUrl32                = $mctGeneric
             PreferredMctUrl         = $mctGeneric
+            CatalogHealth           = 'dead'
+            CatalogHealthReason     = 'Legacy XML catalog host no longer resolves.'
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Threshold 2 release catalog.'
         }
         [pscustomobject]@{
@@ -114,6 +236,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mctGeneric
             MctUrl32                = $mctGeneric
             PreferredMctUrl         = $mctGeneric
+            CatalogHealth           = 'dead'
+            CatalogHealthReason     = 'Legacy CAB catalog host no longer resolves.'
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'First unified catalog format used for legacy edition generation.'
         }
         [pscustomobject]@{
@@ -131,6 +257,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1703
             MctUrl32                = $mct1703
             PreferredMctUrl         = $mct1703
+            CatalogHealth           = 'dead'
+            CatalogHealthReason     = 'Legacy CAB catalog returns 404 on current endpoints.'
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Redstone 2 catalog family.'
         }
         [pscustomobject]@{
@@ -148,6 +278,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1709
             MctUrl32                = $mct1709
             PreferredMctUrl         = $mct1709
+            CatalogHealth           = 'dead'
+            CatalogHealthReason     = 'Legacy CAB catalog returns 404 on current endpoints.'
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Catalog family used for the newer Redstone releases.'
         }
         [pscustomobject]@{
@@ -165,6 +299,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1803
             MctUrl32                = $mct1803
             PreferredMctUrl         = $mct1803
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'dead'
+            MctHealthReason         = 'Pinned MCT URL currently returns HTTP 400.'
             Notes                   = 'Shares the post-Redstone catalog family.'
         }
         [pscustomobject]@{
@@ -182,6 +320,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1809
             MctUrl32                = $mct1809
             PreferredMctUrl         = $mct1809
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'dead'
+            MctHealthReason         = 'Pinned MCT URL currently returns HTTP 400.'
             Notes                   = 'RS5 release catalog and matching MCT.'
         }
         [pscustomobject]@{
@@ -199,6 +341,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1903
             MctUrl32                = $mct1903
             PreferredMctUrl         = $mct1903
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'dead'
+            MctHealthReason         = 'Pinned MCT URL currently returns HTTP 400.'
             Notes                   = '19H1 release catalog.'
         }
         [pscustomobject]@{
@@ -216,6 +362,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct1909
             MctUrl32                = $mct1909
             PreferredMctUrl         = $mct1909
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = '19H2 release refresh catalog.'
         }
         [pscustomobject]@{
@@ -233,6 +383,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct2004
             MctUrl32                = $mct2004
             PreferredMctUrl         = $mct2004
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'dead'
+            MctHealthReason         = 'Pinned MCT URL currently returns HTTP 400.'
             Notes                   = 'Pinned 20H1 media tool family.'
         }
         [pscustomobject]@{
@@ -250,6 +404,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct20H2
             MctUrl32                = $mct20H2
             PreferredMctUrl         = $mct20H2
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Pinned MCT family for the 20H2 release.'
         }
         [pscustomobject]@{
@@ -267,6 +425,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct21H1
             MctUrl32                = $mct21H1
             PreferredMctUrl         = $mct21H1
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Pinned MCT family for the 21H1 release.'
         }
         [pscustomobject]@{
@@ -284,6 +446,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct21H2
             MctUrl32                = $mct21H2
             PreferredMctUrl         = $mct21H2
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Pinned Windows 10 21H2 media tool.'
         }
         [pscustomobject]@{
@@ -301,6 +467,10 @@ function Get-LegacyMediaManifest {
             MctUrl                  = $mct22H2
             MctUrl32                = $mct22H2
             PreferredMctUrl         = $mct22H2
+            CatalogHealth           = 'healthy'
+            CatalogHealthReason     = ''
+            MctHealth               = 'healthy'
+            MctHealthReason         = ''
             Notes                   = 'Final Windows 10 feature release.'
         }
     )
@@ -351,6 +521,7 @@ function Get-LegacyMediaSourceDescriptors {
 
     $sources = @()
     if ($spec.CatalogKind -and $spec.CatalogUrl) {
+        $catalogHealth = Get-LegacyMediaSourceHealth -Spec $spec -Kind $spec.CatalogKind -Architecture 'neutral'
         $sources += New-LegacyMediaSourceDescriptor `
             -Kind $spec.CatalogKind `
             -Url $spec.CatalogUrl `
@@ -360,10 +531,16 @@ function Get-LegacyMediaSourceDescriptors {
             -Build $spec.Build `
             -OS $spec.OS `
             -Architecture 'neutral' `
-            -Notes $spec.Notes
+            -Notes $spec.Notes `
+            -SourceId (Get-LegacyMediaSourceId -Kind $spec.CatalogKind -Architecture 'neutral') `
+            -Health $catalogHealth.Health `
+            -Selectable $catalogHealth.Selectable `
+            -AutoEligible $catalogHealth.AutoEligible `
+            -HealthReason $catalogHealth.Reason
     }
 
     if ($spec.MctUrl) {
+        $mctHealth = Get-LegacyMediaSourceHealth -Spec $spec -Kind 'MCTEXE' -Architecture 'x64'
         $sources += New-LegacyMediaSourceDescriptor `
             -Kind 'MCTEXE' `
             -Url $spec.MctUrl `
@@ -374,10 +551,16 @@ function Get-LegacyMediaSourceDescriptors {
             -OS $spec.OS `
             -Architecture 'x64' `
             -Notes 'Preferred launcher' `
-            -Confidence 'Heuristic'
+            -Confidence 'Heuristic' `
+            -SourceId (Get-LegacyMediaSourceId -Kind 'MCTEXE' -Architecture 'x64') `
+            -Health $mctHealth.Health `
+            -Selectable $mctHealth.Selectable `
+            -AutoEligible $mctHealth.AutoEligible `
+            -HealthReason $mctHealth.Reason
     }
 
     if ($spec.MctUrl32 -and $spec.MctUrl32 -ne $spec.MctUrl) {
+        $mctHealth32 = Get-LegacyMediaSourceHealth -Spec $spec -Kind 'MCTEXE' -Architecture 'x86'
         $sources += New-LegacyMediaSourceDescriptor `
             -Kind 'MCTEXE' `
             -Url $spec.MctUrl32 `
@@ -388,7 +571,12 @@ function Get-LegacyMediaSourceDescriptors {
             -OS $spec.OS `
             -Architecture 'x86' `
             -Notes '32-bit launcher' `
-            -Confidence 'Heuristic'
+            -Confidence 'Heuristic' `
+            -SourceId (Get-LegacyMediaSourceId -Kind 'MCTEXE' -Architecture 'x86') `
+            -Health $mctHealth32.Health `
+            -Selectable $mctHealth32.Selectable `
+            -AutoEligible $mctHealth32.AutoEligible `
+            -HealthReason $mctHealth32.Reason
     }
 
     $sources
@@ -421,7 +609,9 @@ function Get-LegacyMediaPreferredSources {
         [string]$Version,
 
         [ValidateSet('x64','x86','neutral')]
-        [string]$Architecture = 'x64'
+        [string]$Architecture = 'x64',
+
+        [switch]$IncludeDead
     )
 
     $sources = @(Get-LegacyMediaSourceDescriptors -Version $Version)
@@ -439,6 +629,10 @@ function Get-LegacyMediaPreferredSources {
         }
 
         if ($arch -eq 'neutral' -or $srcArch -eq 'neutral' -or $srcArch -ieq $arch) {
+            if (-not $IncludeDead -and $source.PSObject.Properties.Name -contains 'AutoEligible' -and -not $source.AutoEligible) {
+                continue
+            }
+
             $priority = switch ($source.Kind) {
                 'CAB'   { 0 }
                 'XML'   { 1 }
@@ -459,6 +653,11 @@ function Get-LegacyMediaPreferredSources {
                 Architecture   = $srcArch
                 Notes          = $source.Notes
                 Confidence     = $source.Confidence
+                SourceId       = $source.SourceId
+                Health         = $source.Health
+                Selectable     = $source.Selectable
+                AutoEligible   = $source.AutoEligible
+                HealthReason   = $source.HealthReason
             }
         }
     }

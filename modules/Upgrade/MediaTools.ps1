@@ -1235,3 +1235,503 @@ function Test-LegacyMctFallbackReady {
 
     return [bool]($spec.MctExePath -and $spec.CatalogPath)
 }
+
+function Get-WfuUsbDiskInfo {
+    <#
+    .SYNOPSIS
+        Resolves a USB target disk by number or identifier and returns a normalized object.
+    #>
+    [CmdletBinding()]
+    param(
+        [int]$DiskNumber,
+        [string]$DiskId
+    )
+
+    $disk = $null
+    if ($PSBoundParameters.ContainsKey('DiskNumber')) {
+        try {
+            $disk = Get-Disk -Number $DiskNumber -ErrorAction Stop
+        } catch {
+            return $null
+        }
+    } elseif ($DiskId) {
+        $needle = $DiskId.Trim()
+        $matches = @(Get-Disk -ErrorAction SilentlyContinue | Where-Object {
+            ($_.UniqueId -and $_.UniqueId -ieq $needle) -or
+            ($_.FriendlyName -and $_.FriendlyName -ieq $needle) -or
+            ($_.SerialNumber -and $_.SerialNumber -ieq $needle) -or
+            ($_.Location -and $_.Location -ieq $needle) -or
+            ($_.Guid -and ([string]$_.Guid) -ieq $needle)
+        })
+        if ($matches.Count -eq 1) {
+            $disk = $matches[0]
+        } else {
+            return $null
+        }
+    }
+
+    if (-not $disk) {
+        return $null
+    }
+
+    [pscustomobject]@{
+        Number            = $disk.Number
+        FriendlyName      = $disk.FriendlyName
+        SerialNumber      = $disk.SerialNumber
+        UniqueId          = $disk.UniqueId
+        Guid              = if ($disk.Guid) { [string]$disk.Guid } else { $null }
+        Size              = $disk.Size
+        PartitionStyle    = $disk.PartitionStyle
+        BusType           = $disk.BusType
+        OperationalStatus = @($disk.OperationalStatus) -join ', '
+        IsBoot            = [bool]$disk.IsBoot
+        IsSystem          = [bool]$disk.IsSystem
+        IsOffline         = [bool]$disk.IsOffline
+        IsReadOnly        = [bool]$disk.IsReadOnly
+    }
+}
+
+function Resolve-WfuUsbDisk {
+    <#
+    .SYNOPSIS
+        Resolves a disk target and ensures the selection is unique.
+    #>
+    [CmdletBinding()]
+    param(
+        [int]$DiskNumber,
+        [string]$DiskId
+    )
+
+    $diskInfo = Get-WfuUsbDiskInfo -DiskNumber $DiskNumber -DiskId $DiskId
+    if (-not $diskInfo) {
+        return $null
+    }
+
+    if ($diskInfo.IsBoot -or $diskInfo.IsSystem) {
+        Write-Log "  Refusing to use system disk $($diskInfo.Number) ($($diskInfo.FriendlyName))." -Level ERROR
+        return $null
+    }
+
+    return $diskInfo
+}
+
+function New-WfuUsbDiskpartScript {
+    <#
+    .SYNOPSIS
+        Creates a diskpart script that prepares a target USB disk.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [int]$DiskNumber,
+
+        [ValidateSet('gpt','mbr')]
+        [string]$PartitionStyle = 'gpt',
+
+        [string]$VolumeLabel = 'WFU-USB'
+    )
+
+    $lines = @(
+        "select disk $DiskNumber",
+        'clean',
+        "convert $PartitionStyle",
+        'create partition primary',
+        "format fs=fat32 quick label=$VolumeLabel",
+        'assign'
+    )
+
+    if ($PartitionStyle -eq 'mbr') {
+        $lines += 'active'
+    }
+
+    $scriptPath = Join-Path $env:TEMP "wfu-tool-diskpart-$DiskNumber-$([guid]::NewGuid().ToString('N')).txt"
+    Set-Content -Path $scriptPath -Value $lines -Encoding ASCII
+    return $scriptPath
+}
+
+function Initialize-WfuUsbDisk {
+    <#
+    .SYNOPSIS
+        Wipes and formats the target USB disk using diskpart.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$Disk,
+
+        [ValidateSet('gpt','mbr')]
+        [string]$PartitionStyle = 'gpt',
+
+        [string]$VolumeLabel = 'WFU-USB'
+    )
+
+    if (-not $Disk) {
+        return $null
+    }
+
+    $scriptPath = New-WfuUsbDiskpartScript -DiskNumber $Disk.Number -PartitionStyle $PartitionStyle -VolumeLabel $VolumeLabel
+    try {
+        if ($PSCmdlet.ShouldProcess("Disk $($Disk.Number)", "Prepare USB disk ($PartitionStyle)")) {
+            Write-Log "  Preparing disk $($Disk.Number) ($($Disk.FriendlyName))..." -Level INFO
+            $proc = Start-Process -FilePath 'diskpart.exe' -ArgumentList "/s `"$scriptPath`"" -NoNewWindow -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+                Write-Log "  diskpart failed with exit code $($proc.ExitCode)." -Level ERROR
+                return $null
+            }
+        }
+
+        $driveLetter = $null
+        $deadline = (Get-Date).AddSeconds(30)
+        while (-not $driveLetter -and (Get-Date) -lt $deadline) {
+            try {
+                $partitions = @(Get-Partition -DiskNumber $Disk.Number -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter })
+                if ($partitions.Count -gt 0) {
+                    $driveLetter = $partitions[0].DriveLetter
+                    break
+                }
+            } catch { }
+
+            try {
+                $vol = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.FileSystemLabel -eq $VolumeLabel } | Select-Object -First 1
+                if ($vol -and $vol.DriveLetter) {
+                    $driveLetter = $vol.DriveLetter
+                    break
+                }
+            } catch { }
+
+            Start-Sleep -Seconds 1
+        }
+
+        if (-not $driveLetter) {
+            Write-Log '  Could not resolve a mounted drive letter after diskpart.' -Level ERROR
+            return $null
+        }
+
+        return [pscustomobject]@{
+            Disk         = $Disk
+            DriveLetter  = $driveLetter
+            RootPath     = "$driveLetter`:\"
+            VolumeLabel  = $VolumeLabel
+            PartitionStyle = $PartitionStyle
+        }
+    } finally {
+        if (Test-Path $scriptPath) {
+            Remove-Item $scriptPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Mount-WfuIsoImage {
+    <#
+    .SYNOPSIS
+        Mounts an ISO and returns the root path plus mount metadata.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$IsoPath
+    )
+
+    if (-not (Test-Path $IsoPath)) {
+        throw "ISO not found: $IsoPath"
+    }
+
+    $existing = Get-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue
+    if ($existing -and $existing.Attached) {
+        $volume = $existing | Get-Volume -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($volume -and $volume.DriveLetter) {
+            return [pscustomobject]@{
+                IsoPath     = $IsoPath
+                Mounted     = $true
+                DriveLetter  = $volume.DriveLetter
+                RootPath    = "$($volume.DriveLetter)`:\"
+                WasAlreadyMounted = $true
+            }
+        }
+    }
+
+    $mount = Mount-DiskImage -ImagePath $IsoPath -PassThru -ErrorAction Stop
+    $volume = $mount | Get-Volume -ErrorAction Stop | Select-Object -First 1
+    if (-not $volume -or -not $volume.DriveLetter) {
+        throw "Could not resolve mounted volume for ISO: $IsoPath"
+    }
+
+    [pscustomobject]@{
+        IsoPath     = $IsoPath
+        Mounted     = $true
+        DriveLetter  = $volume.DriveLetter
+        RootPath    = "$($volume.DriveLetter)`:\"
+        WasAlreadyMounted = $false
+    }
+}
+
+function Dismount-WfuIsoImage {
+    <#
+    .SYNOPSIS
+        Dismounts an ISO if it is currently attached.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$IsoPath
+    )
+
+    try {
+        $diskImage = Get-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue
+        if ($diskImage -and $diskImage.Attached) {
+            Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue
+        }
+    } catch { }
+}
+
+function Test-WfuInstallImageNeedsSplit {
+    <#
+    .SYNOPSIS
+        Returns whether install.wim needs splitting for FAT32 media.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$InstallImagePath,
+        [int64]$MaxBytes = 3800MB
+    )
+
+    if (-not (Test-Path $InstallImagePath)) {
+        return $false
+    }
+
+    try {
+        return ((Get-Item $InstallImagePath).Length -gt $MaxBytes)
+    } catch {
+        return $false
+    }
+}
+
+function Copy-WfuMediaTree {
+    <#
+    .SYNOPSIS
+        Copies ISO contents to a writable USB root.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SourceRoot,
+
+        [Parameter(Mandatory)]
+        [string]$DestinationRoot,
+
+        [string[]]$ExcludeFiles = @()
+    )
+
+    if (-not (Test-Path $DestinationRoot)) {
+        New-Item -ItemType Directory -Path $DestinationRoot -Force | Out-Null
+    }
+
+    $args = @(
+        $SourceRoot,
+        $DestinationRoot,
+        '/E',
+        '/R:1',
+        '/W:1',
+        '/NFL',
+        '/NDL',
+        '/NJH',
+        '/NJS',
+        '/NC',
+        '/NS',
+        '/NP'
+    )
+    foreach ($file in $ExcludeFiles) {
+        if ($file) {
+            $args += '/XF'
+            $args += $file
+        }
+    }
+
+    & robocopy.exe @args | Out-Null
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ge 8) {
+        throw "Robocopy failed with exit code $exitCode"
+    }
+}
+
+function Expand-WfuSplitWim {
+    <#
+    .SYNOPSIS
+        Splits install.wim into SWM parts suitable for FAT32 media.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [string]$InstallWimPath,
+
+        [Parameter(Mandatory)]
+        [string]$DestinationSourcesPath,
+
+        [int]$ChunkMB = 3800
+    )
+
+    if (-not (Test-Path $InstallWimPath)) {
+        throw "install.wim not found: $InstallWimPath"
+    }
+
+    if (-not (Test-Path $DestinationSourcesPath)) {
+        New-Item -ItemType Directory -Path $DestinationSourcesPath -Force | Out-Null
+    }
+
+    $destinationSwm = Join-Path $DestinationSourcesPath 'install.swm'
+    if ($PSCmdlet.ShouldProcess($destinationSwm, 'Split install.wim for FAT32 media')) {
+        Write-Log "  Splitting install.wim for FAT32 media..." -Level INFO
+        $proc = Start-Process -FilePath 'dism.exe' -ArgumentList "/Split-Image /ImageFile:`"$InstallWimPath`" /SWMFile:`"$destinationSwm`" /FileSize:$ChunkMB" -NoNewWindow -Wait -PassThru
+        if ($proc.ExitCode -ne 0) {
+            throw "DISM split-image failed with exit code $($proc.ExitCode)"
+        }
+    }
+
+    return $destinationSwm
+}
+
+function Resolve-WfuUsbMediaPlan {
+    <#
+    .SYNOPSIS
+        Builds the state required to write bootable USB media from an ISO.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$IsoPath,
+
+        [int]$UsbDiskNumber,
+
+        [string]$UsbDiskId,
+
+        [ValidateSet('gpt','mbr')]
+        [string]$PartitionStyle = 'gpt',
+
+        [switch]$KeepIso,
+        [string]$VolumeLabel = 'WFU-USB'
+    )
+
+    $disk = Resolve-WfuUsbDisk -DiskNumber $UsbDiskNumber -DiskId $UsbDiskId
+    if (-not $disk) {
+        return $null
+    }
+
+    $mount = Mount-WfuIsoImage -IsoPath $IsoPath
+    $installWim = Join-Path $mount.RootPath 'sources\install.wim'
+    $installEsd = Join-Path $mount.RootPath 'sources\install.esd'
+    $needsSplit = (Test-Path $installWim) -and (Test-WfuInstallImageNeedsSplit -InstallImagePath $installWim)
+
+    [pscustomobject]@{
+        IsoPath         = $IsoPath
+        Disk            = $disk
+        Mount           = $mount
+        PartitionStyle  = $PartitionStyle
+        KeepIso         = [bool]$KeepIso
+        VolumeLabel     = $VolumeLabel
+        InstallWimPath  = if (Test-Path $installWim) { $installWim } else { $null }
+        InstallEsdPath  = if (Test-Path $installEsd) { $installEsd } else { $null }
+        NeedsWimSplit   = $needsSplit
+        SourceRoot      = $mount.RootPath
+        UsbRoot         = $null
+    }
+}
+
+function Write-WfuUsbMedia {
+    <#
+    .SYNOPSIS
+        Writes bootable USB media from a staged ISO using ISO-first flow.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [string]$IsoPath,
+
+        [int]$UsbDiskNumber,
+
+        [string]$UsbDiskId,
+
+        [ValidateSet('gpt','mbr')]
+        [string]$PartitionStyle = 'gpt',
+
+        [switch]$KeepIso,
+        [string]$VolumeLabel = 'WFU-USB'
+    )
+
+    $plan = Resolve-WfuUsbMediaPlan -IsoPath $IsoPath -UsbDiskNumber $UsbDiskNumber -UsbDiskId $UsbDiskId -PartitionStyle $PartitionStyle -KeepIso:$KeepIso -VolumeLabel $VolumeLabel
+    if (-not $plan) {
+        return $false
+    }
+
+    Write-Log "  USB target     : Disk $($plan.Disk.Number) ($($plan.Disk.FriendlyName))" -Level INFO
+    Write-Log "  USB partition  : $($plan.PartitionStyle)" -Level INFO
+    Write-Log "  USB volume lbl : $($plan.VolumeLabel)" -Level DEBUG
+    Write-Log "  ISO source     : $($plan.IsoPath)" -Level INFO
+
+    $usbRoot = $null
+    try {
+        $formatted = Initialize-WfuUsbDisk -Disk $plan.Disk -PartitionStyle $plan.PartitionStyle -VolumeLabel $plan.VolumeLabel
+        if (-not $formatted) {
+            return $false
+        }
+        $usbRoot = $formatted.RootPath
+
+        Write-Log "  Mounting ISO media..." -Level INFO
+        $mount = $plan.Mount
+        if (-not $mount -or -not $mount.RootPath) {
+            $mount = Mount-WfuIsoImage -IsoPath $plan.IsoPath
+        }
+
+        $sourceRoot = $mount.RootPath
+        if (-not (Test-Path $sourceRoot)) {
+            throw "Mounted ISO root not accessible: $sourceRoot"
+        }
+
+        $exclude = @()
+        $installWim = Join-Path $sourceRoot 'sources\install.wim'
+        $installEsd = Join-Path $sourceRoot 'sources\install.esd'
+        $usbSources = Join-Path $usbRoot 'sources'
+        if ($plan.NeedsWimSplit) {
+            $exclude += 'install.wim'
+        }
+
+        Write-Log '  Copying ISO contents to USB...' -Level INFO
+        Copy-WfuMediaTree -SourceRoot $sourceRoot -DestinationRoot $usbRoot -ExcludeFiles $exclude
+
+        if ($plan.NeedsWimSplit) {
+            Expand-WfuSplitWim -InstallWimPath $installWim -DestinationSourcesPath $usbSources | Out-Null
+            if (Test-Path (Join-Path $usbSources 'install.wim')) {
+                Remove-Item (Join-Path $usbSources 'install.wim') -Force -ErrorAction SilentlyContinue
+            }
+        } elseif (Test-Path $installWim) {
+            Write-Log '  install.wim fits on FAT32 media; copied as-is.' -Level DEBUG
+        } elseif (Test-Path $installEsd) {
+            Write-Log '  install.esd detected; copied as-is.' -Level DEBUG
+        }
+
+        if (-not $plan.KeepIso) {
+            Write-Log '  Removing staged ISO after successful USB write.' -Level INFO
+            try {
+                Dismount-WfuIsoImage -IsoPath $plan.IsoPath
+                Remove-Item $plan.IsoPath -Force -ErrorAction SilentlyContinue
+            } catch { }
+        } else {
+            Dismount-WfuIsoImage -IsoPath $plan.IsoPath
+        }
+
+        return [pscustomobject]@{
+            Success        = $true
+            IsoPath        = $plan.IsoPath
+            UsbRoot        = $usbRoot
+            DiskNumber     = $plan.Disk.Number
+            DiskName       = $plan.Disk.FriendlyName
+            PartitionStyle = $plan.PartitionStyle
+            NeedsWimSplit  = $plan.NeedsWimSplit
+            KeepIso        = [bool]$plan.KeepIso
+        }
+    } catch {
+        Write-Log "  USB media creation failed: $_" -Level ERROR
+        try { if ($plan.IsoPath) { Dismount-WfuIsoImage -IsoPath $plan.IsoPath } } catch { }
+        return $false
+    }
+}
