@@ -157,8 +157,12 @@ Write-Host '  ============================================================' -For
 Write-Host ''
 
 # Wait a bit for services to stabilize after boot
-Write-Status 'Waiting 15 seconds for system services to stabilize...' DarkGray
-Start-Sleep -Seconds 15
+if ($env:WFU_TOOL_TEST_MODE -eq '1') {
+    Write-Status 'WFU_TOOL_TEST_MODE detected -- skipping post-boot wait.' DarkGray
+} else {
+    Write-Status 'Waiting 15 seconds for system services to stabilize...' DarkGray
+    Start-Sleep -Seconds 15
+}
 
 # Validate paths
 if ([string]::IsNullOrEmpty($ScriptRoot)) {
@@ -244,5 +248,7 @@ Write-Host '  ============================================================' -For
 Write-Host '   Resume complete. Check the log for details.' -ForegroundColor White
 Write-Host '  ============================================================' -ForegroundColor Cyan
 Write-Host ''
-Write-Host '  Press any key to close...' -ForegroundColor DarkGray
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+if ($env:WFU_TOOL_TEST_MODE -ne '1') {
+    Write-Host '  Press any key to close...' -ForegroundColor DarkGray
+    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+}
