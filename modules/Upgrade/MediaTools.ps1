@@ -7,7 +7,7 @@ function Test-FileHash {
     param(
         [string]$FilePath,
         [string]$ExpectedHash,
-        [ValidateSet('SHA1','SHA256')]
+        [ValidateSet('SHA1', 'SHA256')]
         [string]$Algorithm = 'SHA1'
     )
 
@@ -27,13 +27,15 @@ function Test-FileHash {
         if ($fileHash -eq $ExpectedHash.ToUpper()) {
             Write-Log "  $Algorithm hash verified: $fileHash" -Level SUCCESS
             return $true
-        } else {
+        }
+        else {
             Write-Log "  $Algorithm MISMATCH!" -Level ERROR
             Write-Log "    Expected: $($ExpectedHash.ToUpper())" -Level ERROR
             Write-Log "    Got:      $fileHash" -Level ERROR
             return $false
         }
-    } catch {
+    }
+    catch {
         Write-Log "  Hash verification failed: $_" -Level WARN
         return $true  # Don't block on hash check failure
     }
@@ -82,7 +84,8 @@ function Convert-EsdToIso {
             # Fallback: just get index numbers
             $indexNums = [regex]::Matches($dismText, 'Index\s*:\s*(\d+)') | ForEach-Object { [int]$_.Groups[1].Value }
             Write-Log "  ESD contains $($indexNums.Count) image(s) (names not parsed)" -Level DEBUG
-        } else {
+        }
+        else {
             Write-Log "  ESD images:" -Level DEBUG
             foreach ($block in $indexBlocks) {
                 Write-Log "    Index $($block.Groups[1].Value): $($block.Groups[2].Value.Trim())" -Level DEBUG
@@ -161,11 +164,13 @@ function Convert-EsdToIso {
             Write-Log "  install.wim created: $wimSize GB (single edition)" -Level SUCCESS
             Write-Log "  Setup structure ready at: $wimDir" -Level SUCCESS
             return $wimDir
-        } else {
+        }
+        else {
             Write-Log '  Could not export install image from ESD.' -Level WARN
             return $null
         }
-    } catch {
+    }
+    catch {
         Write-Log "  ESD conversion failed: $_" -Level WARN
         return $null
     }
@@ -204,7 +209,8 @@ function Start-DownloadWithProgress {
                 $eta = if ($speed -gt 0) { [math]::Round(($bitsJob.BytesTotal - $bitsJob.BytesTransferred) / 1MB / $speed / 60, 1) } else { 0 }
                 $bar = '[' + ('#' * [math]::Floor($pct / 2.5)).PadRight(40) + ']'
                 Write-Host ("`r  $bar $pct% -- $dlMB / $totalMB MB -- ${speed} MB/s -- ETA ${eta}m   ") -NoNewline
-            } else {
+            }
+            else {
                 Write-Host ("`r  Connecting... $($bitsJob.JobState)   ") -NoNewline
             }
             Start-Sleep -Seconds 2
@@ -216,11 +222,13 @@ function Start-DownloadWithProgress {
             $size = [math]::Round((Get-Item $Destination).Length / 1GB, 2)
             Write-Log "  Download complete (BITS): $size GB" -Level SUCCESS
             return $true
-        } else {
+        }
+        else {
             Write-Log "  BITS transfer ended in state: $($bitsJob.JobState)" -Level WARN
             Remove-BitsTransfer $bitsJob -ErrorAction SilentlyContinue
         }
-    } catch {
+    }
+    catch {
         Write-Log "  BITS failed: $_" -Level WARN
     }
 
@@ -264,7 +272,8 @@ function Start-DownloadWithProgress {
         $size = [math]::Round((Get-Item $Destination).Length / 1GB, 2)
         Write-Log "  Download complete (HttpClient): $size GB" -Level SUCCESS
         return $true
-    } catch {
+    }
+    catch {
         Write-Log "  HttpClient failed: $_" -Level WARN
         try { $fileStream.Close() } catch { }
         try { $client.Dispose() } catch { }
@@ -285,7 +294,8 @@ function Start-DownloadWithProgress {
                 return $true
             }
         }
-    } catch {
+    }
+    catch {
         Write-Log "  curl failed: $_" -Level WARN
     }
 
@@ -321,7 +331,8 @@ function Get-SystemLanguageCode {
         if ($userLangs -and $userLangs.Count -gt 0) {
             $langCode = $userLangs[0].LanguageTag
         }
-    } catch { }
+    }
+    catch { }
 
     # Method 2: MUI UILanguages with Type field
     # Type 273 = original install, Type 274 = added pack
@@ -334,7 +345,8 @@ function Get-SystemLanguageCode {
                 if ($uiLangs -and $uiLangs.Count -eq 1) {
                     # Only one language installed -- use it
                     $langCode = $uiLangs[0].PSChildName
-                } elseif ($uiLangs -and $uiLangs.Count -gt 1) {
+                }
+                elseif ($uiLangs -and $uiLangs.Count -gt 1) {
                     # Multiple languages -- pick by Nls\Language\Default
                     $defLcid = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Nls\Language' -Name 'Default' -ErrorAction SilentlyContinue).Default
                     if ($defLcid) {
@@ -345,7 +357,8 @@ function Get-SystemLanguageCode {
                     if (-not $langCode) { $langCode = $uiLangs[0].PSChildName }
                 }
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 3: SYSTEM user MuiCached
@@ -359,7 +372,8 @@ function Get-SystemLanguageCode {
                     $langCode = $langCode.Trim()
                 }
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 4: Nls\Language\Default LCID
@@ -370,7 +384,8 @@ function Get-SystemLanguageCode {
                 $culture = [System.Globalization.CultureInfo]::GetCultureInfo([int]"0x$defLcid")
                 if ($culture) { $langCode = $culture.Name }
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 5: Get-WinSystemLocale
@@ -378,14 +393,16 @@ function Get-SystemLanguageCode {
         try {
             $locale = Get-WinSystemLocale -ErrorAction SilentlyContinue
             if ($locale) { $langCode = $locale.Name }
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 6: Get-Culture (last resort)
     if (-not $langCode) {
         try {
             $langCode = (Get-Culture).Name
-        } catch { }
+        }
+        catch { }
     }
 
     # Method 4: fallback
@@ -464,7 +481,8 @@ function ConvertTo-MicrosoftLanguageName {
             'zh' { return 'Chinese Simplified' }
             default { return $culture.EnglishName.Split('(')[0].Trim() }
         }
-    } catch {
+    }
+    catch {
         return 'English'
     }
 }
@@ -529,13 +547,15 @@ function Repair-TlsConfiguration {
     # 4. Also set for the current PowerShell process (immediate effect)
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-    } catch {
+    }
+    catch {
         try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
     }
 
     if ($fixed -gt 0) {
         Write-Log "  TLS 1.2 configuration fixed ($fixed registry changes)." -Level SUCCESS
-    } else {
+    }
+    else {
         Write-Log '  TLS 1.2 already configured correctly.' -Level DEBUG
     }
 }
@@ -580,7 +600,8 @@ function Start-MctIsoCreation {
         if (Test-Path $legacySidecar) {
             try {
                 $LegacySpec = Get-Content -Path $legacySidecar -Raw | ConvertFrom-Json -ErrorAction Stop
-            } catch { }
+            }
+            catch { }
         }
     }
 
@@ -618,7 +639,8 @@ function Start-MctIsoCreation {
                 Copy-Item -Path $CatalogPath -Destination $catalogDest -Force -ErrorAction Stop
             }
             Write-Log "  Staged legacy catalog: $catalogLeaf" -Level DEBUG
-        } catch {
+        }
+        catch {
             Write-Log "  Could not stage catalog ${CatalogPath}: $_" -Level WARN
         }
     }
@@ -641,7 +663,8 @@ function Start-MctIsoCreation {
             Add-Type -AssemblyName 'System.Windows.Forms' -ErrorAction Stop
             $uiLoaded = $true
             Write-Log '  UIAutomation loaded for MCT wizard control.' -Level DEBUG
-        } catch {
+        }
+        catch {
             Write-Log "  UIAutomation not available: $_ -- MCT may need manual interaction." -Level WARN
         }
     }
@@ -670,7 +693,7 @@ function Start-MctIsoCreation {
 
     try {
         $mctProc = Start-Process -FilePath $MctExePath -ArgumentList $argString `
-        -WorkingDirectory $mctDir -PassThru -ErrorAction Stop
+            -WorkingDirectory $mctDir -PassThru -ErrorAction Stop
 
         if ($null -eq $mctProc) {
             Write-Log '  MCT process is null.' -Level ERROR
@@ -758,7 +781,8 @@ function Start-MctIsoCreation {
                         $selPattern = $createMediaRadio.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)
                         $selPattern.Select()
                         Write-Log '  [UI] "Create installation media" selected.' -Level SUCCESS
-                    } catch {
+                    }
+                    catch {
                         Write-Log "  [UI] Could not select radio: $_" -Level WARN
                     }
                     Start-Sleep -Milliseconds 500
@@ -771,7 +795,8 @@ function Start-MctIsoCreation {
                     }
                     Press-Enter
                     Write-Log '  [UI] Clicked Next on media choice.' -Level DEBUG
-                } else {
+                }
+                else {
                     Write-Log "  [UI] Radio buttons not found ($($radios.Count) found) -- MCT may have auto-advanced." -Level WARN
                     Press-Enter  # Try pressing Enter anyway
                 }
@@ -795,7 +820,8 @@ function Start-MctIsoCreation {
                         $selPattern.Select()
                         Write-Log '  [UI] "ISO file" selected.' -Level SUCCESS
                     }
-                } catch {
+                }
+                catch {
                     Write-Log "  [UI] ISO radio selection failed: $_" -Level WARN
                 }
                 Start-Sleep -Milliseconds 500
@@ -815,7 +841,8 @@ function Start-MctIsoCreation {
                         [System.Windows.Forms.SendKeys]::Flush()
                         Write-Log "  [UI] ISO path set: $OutputIsoPath" -Level DEBUG
                     }
-                } catch {
+                }
+                catch {
                     Write-Log "  [UI] Could not set ISO path (will use default): $_" -Level WARN
                 }
 
@@ -833,11 +860,13 @@ function Start-MctIsoCreation {
                 Press-Enter
                 Write-Log '  [UI] Download started.' -Level SUCCESS
 
-            } catch {
+            }
+            catch {
                 Write-Log "  [UI] Automation failed: $_ -- MCT may need manual clicks." -Level WARN
                 # Don't return false -- MCT might still work if user clicks through
             }
-        } else {
+        }
+        else {
             Write-Log '  MCT launched without UI automation -- you may need to click through the wizard.' -Level WARN
         }
 
@@ -891,8 +920,10 @@ function Start-MctIsoCreation {
                             }
                         }
                     }
-                } catch { }
-            } elseif (Test-Path $esdDir) {
+                }
+                catch { }
+            }
+            elseif (Test-Path $esdDir) {
                 # Fallback: track by ESD folder size
                 $dlMB = [math]::Round((Get-ChildItem $esdDir -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum / 1MB)
                 $status = "  MCT downloading... ${elapsed}m, ${dlMB} MB"
@@ -924,7 +955,8 @@ function Start-MctIsoCreation {
             Write-Log '  Error 0x80072F78: TLS/network issue. Check internet connection and TLS 1.2 settings.' -Level ERROR
         }
         return $false
-    } catch {
+    }
+    catch {
         Write-Log "  MCT execution failed: $_" -Level ERROR
         return $false
     }
@@ -949,24 +981,24 @@ function Get-LegacyMctReleaseCatalog {
     #>
     if (Get-Command 'Get-LegacyMediaManifest' -ErrorAction SilentlyContinue) {
         return @(Get-LegacyMediaManifest | ForEach-Object {
-            [pscustomobject]@{
-                Version                 = $_.Version
-                DisplayVersion          = $_.DisplayVersion
-                Build                   = $_.Build
-                OS                      = $_.OS
-                ReleaseLine             = $_.ReleaseLine
-                SupportsArchSelection   = [bool]$_.SupportsArchSelection
-                SupportsMediaEditionArg = [bool]$_.SupportsMediaEditionArg
-                SupportsBusinessEdition  = [bool]$_.SupportsBusinessEdition
-                CatalogKind             = if ($_.CatalogUrl) { if ($_.CatalogUrl -match '\.xml(?:$|\?)') { 'XML' } elseif ($_.CatalogUrl -match '\.cab(?:$|\?)') { 'CAB' } else { 'URL' } } else { 'MCT' }
-                CatalogUrl              = $_.CatalogUrl
-                CatalogFileName         = if ($_.CatalogUrl) { Split-Path $_.CatalogUrl -Leaf } else { '' }
-                MctUrl                  = $_.MctUrl
-                MctUrl32                = $_.MctUrl32
-                PreferredMctUrl         = $_.PreferredMctUrl
-                Notes                   = $_.Notes
-            }
-        })
+                [pscustomobject]@{
+                    Version                 = $_.Version
+                    DisplayVersion          = $_.DisplayVersion
+                    Build                   = $_.Build
+                    OS                      = $_.OS
+                    ReleaseLine             = $_.ReleaseLine
+                    SupportsArchSelection   = [bool]$_.SupportsArchSelection
+                    SupportsMediaEditionArg = [bool]$_.SupportsMediaEditionArg
+                    SupportsBusinessEdition = [bool]$_.SupportsBusinessEdition
+                    CatalogKind             = if ($_.CatalogUrl) { if ($_.CatalogUrl -match '\.xml(?:$|\?)') { 'XML' } elseif ($_.CatalogUrl -match '\.cab(?:$|\?)') { 'CAB' } else { 'URL' } } else { 'MCT' }
+                    CatalogUrl              = $_.CatalogUrl
+                    CatalogFileName         = if ($_.CatalogUrl) { Split-Path $_.CatalogUrl -Leaf } else { '' }
+                    MctUrl                  = $_.MctUrl
+                    MctUrl32                = $_.MctUrl32
+                    PreferredMctUrl         = $_.PreferredMctUrl
+                    Notes                   = $_.Notes
+                }
+            })
     }
 
     return @()
@@ -988,24 +1020,24 @@ function Get-LegacyMctReleaseSpec {
     }
 
     return [pscustomobject]@{
-        Version             = $entry.Version
-        DisplayVersion      = $entry.DisplayVersion
-        Build               = $entry.Build
-        OS                  = $entry.OS
-        ReleaseLine         = $entry.ReleaseLine
-        CatalogKind         = $entry.CatalogKind
-        SupportsMediaEdition = [bool]$entry.SupportsMediaEditionArg
+        Version                 = $entry.Version
+        DisplayVersion          = $entry.DisplayVersion
+        Build                   = $entry.Build
+        OS                      = $entry.OS
+        ReleaseLine             = $entry.ReleaseLine
+        CatalogKind             = $entry.CatalogKind
+        SupportsMediaEdition    = [bool]$entry.SupportsMediaEditionArg
         SupportsMediaEditionArg = [bool]$entry.SupportsMediaEditionArg
-        SupportsArchSelection = [bool]$entry.SupportsArchSelection
+        SupportsArchSelection   = [bool]$entry.SupportsArchSelection
         SupportsBusinessEdition = [bool]$entry.SupportsBusinessEdition
-        UsesUiAutomation    = [bool](-not $entry.SupportsMediaEditionArg -or $entry.Version -in @('W10_1507','W10_1511','W10_1607','W10_1703','W10_1709'))
-        Notes               = $entry.Notes
-        CatalogPath         = $null
-        CatalogUrl          = $entry.CatalogUrl
-        CatalogFileName     = $entry.CatalogFileName
-        MctExePath          = $null
-        MctExeUrl           = $entry.PreferredMctUrl
-        MctExeUrl32         = $entry.MctUrl32
+        UsesUiAutomation        = [bool](-not $entry.SupportsMediaEditionArg -or $entry.Version -in @('W10_1507', 'W10_1511', 'W10_1607', 'W10_1703', 'W10_1709'))
+        Notes                   = $entry.Notes
+        CatalogPath             = $null
+        CatalogUrl              = $entry.CatalogUrl
+        CatalogFileName         = $entry.CatalogFileName
+        MctExePath              = $null
+        MctExeUrl               = $entry.PreferredMctUrl
+        MctExeUrl32             = $entry.MctUrl32
     }
 }
 
@@ -1051,26 +1083,27 @@ function New-LegacyMctWorkspace {
     $null = New-Item -ItemType Directory -Path $workspace -Force -ErrorAction SilentlyContinue
 
     $legacyInfo = [pscustomobject]@{
-        Version             = $spec.Version
-        DisplayVersion      = $spec.DisplayVersion
-        Build               = $spec.Build
-        OS                  = $spec.OS
-        ReleaseLine         = $spec.ReleaseLine
-        CatalogKind         = $spec.CatalogKind
+        Version                 = $spec.Version
+        DisplayVersion          = $spec.DisplayVersion
+        Build                   = $spec.Build
+        OS                      = $spec.OS
+        ReleaseLine             = $spec.ReleaseLine
+        CatalogKind             = $spec.CatalogKind
         SupportsMediaEditionArg = $spec.SupportsMediaEditionArg
-        SupportsArchSelection = $spec.SupportsArchSelection
+        SupportsArchSelection   = $spec.SupportsArchSelection
         SupportsBusinessEdition = $spec.SupportsBusinessEdition
-        PreferredMctUrl     = $spec.PreferredMctUrl
-        MctUrl32            = $spec.MctUrl32
-        CatalogUrl          = $spec.CatalogUrl
-        CatalogFileName    = $spec.CatalogFileName
-        Notes               = $spec.Notes
+        PreferredMctUrl         = $spec.PreferredMctUrl
+        MctUrl32                = $spec.MctUrl32
+        CatalogUrl              = $spec.CatalogUrl
+        CatalogFileName         = $spec.CatalogFileName
+        Notes                   = $spec.Notes
     }
 
     $legacyInfoPath = Join-Path $workspace 'legacy-release.json'
     try {
         $legacyInfo | ConvertTo-Json -Depth 6 | Set-Content -Path $legacyInfoPath -Encoding UTF8 -Force
-    } catch {
+    }
+    catch {
         Write-Log "  Could not write legacy release sidecar: $_" -Level WARN
     }
 
@@ -1095,12 +1128,12 @@ function New-LegacyMctWorkspace {
     }
 
     return [pscustomobject]@{
-        Version         = $spec.Version
-        WorkspacePath   = $workspace
-        MctExePath      = $mctPath
-        CatalogPath     = $catalogPath
-        ReleaseSpec     = $spec
-        LegacyInfoPath  = $legacyInfoPath
+        Version        = $spec.Version
+        WorkspacePath  = $workspace
+        MctExePath     = $mctPath
+        CatalogPath    = $catalogPath
+        ReleaseSpec    = $spec
+        LegacyInfoPath = $legacyInfoPath
     }
 }
 
@@ -1185,22 +1218,22 @@ function New-LegacyMctFallbackPlan {
     $needsUiAutomation = [bool]$spec.UsesUiAutomation
 
     return [pscustomobject]@{
-        Version            = $spec.Version
-        DisplayVersion     = $spec.DisplayVersion
-        Build              = $spec.Build
-        CatalogKind        = $spec.CatalogKind
-        UsesUiAutomation   = $needsUiAutomation
-        SupportsMediaEdition = $spec.SupportsMediaEditionArg
+        Version                 = $spec.Version
+        DisplayVersion          = $spec.DisplayVersion
+        Build                   = $spec.Build
+        CatalogKind             = $spec.CatalogKind
+        UsesUiAutomation        = $needsUiAutomation
+        SupportsMediaEdition    = $spec.SupportsMediaEditionArg
         SupportsMediaEditionArg = $spec.SupportsMediaEditionArg
-        CatalogUrl         = $spec.CatalogUrl
-        MctExeUrl          = $spec.MctExeUrl
-        WorkingDirectory   = $WorkingDirectory
-        OutputIsoPath      = $OutputIsoPath
-        CommandLine        = [string]::Join(' ', $argParts)
-        Arguments          = $argParts
-        MctExePath         = $spec.MctExePath
-        CatalogPath        = $spec.CatalogPath
-        Notes              = $spec.Notes
+        CatalogUrl              = $spec.CatalogUrl
+        MctExeUrl               = $spec.MctExeUrl
+        WorkingDirectory        = $WorkingDirectory
+        OutputIsoPath           = $OutputIsoPath
+        CommandLine             = [string]::Join(' ', $argParts)
+        Arguments               = $argParts
+        MctExePath              = $spec.MctExePath
+        CatalogPath             = $spec.CatalogPath
+        Notes                   = $spec.Notes
     }
 }
 
@@ -1224,12 +1257,14 @@ function Test-LegacyMctFallbackReady {
 
     if ($MctExePath -and (Test-Path $MctExePath)) {
         $spec | Add-Member -NotePropertyName MctExePath -NotePropertyValue $MctExePath -Force
-    } elseif ($spec.MctExeUrl) {
+    }
+    elseif ($spec.MctExeUrl) {
         $spec | Add-Member -NotePropertyName MctExePath -NotePropertyValue $true -Force
     }
     if ($CatalogPath -and (Test-Path $CatalogPath)) {
         $spec | Add-Member -NotePropertyName CatalogPath -NotePropertyValue $CatalogPath -Force
-    } elseif ($spec.CatalogUrl) {
+    }
+    elseif ($spec.CatalogUrl) {
         $spec | Add-Member -NotePropertyName CatalogPath -NotePropertyValue $true -Force
     }
 
@@ -1251,21 +1286,24 @@ function Get-WfuUsbDiskInfo {
     if ($PSBoundParameters.ContainsKey('DiskNumber')) {
         try {
             $disk = Get-Disk -Number $DiskNumber -ErrorAction Stop
-        } catch {
+        }
+        catch {
             return $null
         }
-    } elseif ($DiskId) {
+    }
+    elseif ($DiskId) {
         $needle = $DiskId.Trim()
         $matches = @(Get-Disk -ErrorAction SilentlyContinue | Where-Object {
-            ($_.UniqueId -and $_.UniqueId -ieq $needle) -or
-            ($_.FriendlyName -and $_.FriendlyName -ieq $needle) -or
-            ($_.SerialNumber -and $_.SerialNumber -ieq $needle) -or
-            ($_.Location -and $_.Location -ieq $needle) -or
-            ($_.Guid -and ([string]$_.Guid) -ieq $needle)
-        })
+                ($_.UniqueId -and $_.UniqueId -ieq $needle) -or
+                ($_.FriendlyName -and $_.FriendlyName -ieq $needle) -or
+                ($_.SerialNumber -and $_.SerialNumber -ieq $needle) -or
+                ($_.Location -and $_.Location -ieq $needle) -or
+                ($_.Guid -and ([string]$_.Guid) -ieq $needle)
+            })
         if ($matches.Count -eq 1) {
             $disk = $matches[0]
-        } else {
+        }
+        else {
             return $null
         }
     }
@@ -1325,7 +1363,7 @@ function New-WfuUsbDiskpartScript {
         [Parameter(Mandatory)]
         [int]$DiskNumber,
 
-        [ValidateSet('gpt','mbr')]
+        [ValidateSet('gpt', 'mbr')]
         [string]$PartitionStyle = 'gpt',
 
         [string]$VolumeLabel = 'WFU-USB'
@@ -1359,7 +1397,7 @@ function Initialize-WfuUsbDisk {
         [Parameter(Mandatory)]
         [pscustomobject]$Disk,
 
-        [ValidateSet('gpt','mbr')]
+        [ValidateSet('gpt', 'mbr')]
         [string]$PartitionStyle = 'gpt',
 
         [string]$VolumeLabel = 'WFU-USB'
@@ -1389,7 +1427,8 @@ function Initialize-WfuUsbDisk {
                     $driveLetter = $partitions[0].DriveLetter
                     break
                 }
-            } catch { }
+            }
+            catch { }
 
             try {
                 $vol = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.FileSystemLabel -eq $VolumeLabel } | Select-Object -First 1
@@ -1397,7 +1436,8 @@ function Initialize-WfuUsbDisk {
                     $driveLetter = $vol.DriveLetter
                     break
                 }
-            } catch { }
+            }
+            catch { }
 
             Start-Sleep -Seconds 1
         }
@@ -1408,13 +1448,14 @@ function Initialize-WfuUsbDisk {
         }
 
         return [pscustomobject]@{
-            Disk         = $Disk
-            DriveLetter  = $driveLetter
-            RootPath     = "$driveLetter`:\"
-            VolumeLabel  = $VolumeLabel
+            Disk           = $Disk
+            DriveLetter    = $driveLetter
+            RootPath       = "$driveLetter`:\"
+            VolumeLabel    = $VolumeLabel
             PartitionStyle = $PartitionStyle
         }
-    } finally {
+    }
+    finally {
         if (Test-Path $scriptPath) {
             Remove-Item $scriptPath -Force -ErrorAction SilentlyContinue
         }
@@ -1441,10 +1482,10 @@ function Mount-WfuIsoImage {
         $volume = $existing | Get-Volume -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($volume -and $volume.DriveLetter) {
             return [pscustomobject]@{
-                IsoPath     = $IsoPath
-                Mounted     = $true
-                DriveLetter  = $volume.DriveLetter
-                RootPath    = "$($volume.DriveLetter)`:\"
+                IsoPath           = $IsoPath
+                Mounted           = $true
+                DriveLetter       = $volume.DriveLetter
+                RootPath          = "$($volume.DriveLetter)`:\"
                 WasAlreadyMounted = $true
             }
         }
@@ -1457,10 +1498,10 @@ function Mount-WfuIsoImage {
     }
 
     [pscustomobject]@{
-        IsoPath     = $IsoPath
-        Mounted     = $true
-        DriveLetter  = $volume.DriveLetter
-        RootPath    = "$($volume.DriveLetter)`:\"
+        IsoPath           = $IsoPath
+        Mounted           = $true
+        DriveLetter       = $volume.DriveLetter
+        RootPath          = "$($volume.DriveLetter)`:\"
         WasAlreadyMounted = $false
     }
 }
@@ -1481,7 +1522,8 @@ function Dismount-WfuIsoImage {
         if ($diskImage -and $diskImage.Attached) {
             Dismount-DiskImage -ImagePath $IsoPath -ErrorAction SilentlyContinue
         }
-    } catch { }
+    }
+    catch { }
 }
 
 function Test-WfuInstallImageNeedsSplit {
@@ -1502,7 +1544,8 @@ function Test-WfuInstallImageNeedsSplit {
 
     try {
         return ((Get-Item $InstallImagePath).Length -gt $MaxBytes)
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -1605,7 +1648,7 @@ function Resolve-WfuUsbMediaPlan {
 
         [string]$UsbDiskId,
 
-        [ValidateSet('gpt','mbr')]
+        [ValidateSet('gpt', 'mbr')]
         [string]$PartitionStyle = 'gpt',
 
         [switch]$KeepIso,
@@ -1623,17 +1666,17 @@ function Resolve-WfuUsbMediaPlan {
     $needsSplit = (Test-Path $installWim) -and (Test-WfuInstallImageNeedsSplit -InstallImagePath $installWim)
 
     [pscustomobject]@{
-        IsoPath         = $IsoPath
-        Disk            = $disk
-        Mount           = $mount
-        PartitionStyle  = $PartitionStyle
-        KeepIso         = [bool]$KeepIso
-        VolumeLabel     = $VolumeLabel
-        InstallWimPath  = if (Test-Path $installWim) { $installWim } else { $null }
-        InstallEsdPath  = if (Test-Path $installEsd) { $installEsd } else { $null }
-        NeedsWimSplit   = $needsSplit
-        SourceRoot      = $mount.RootPath
-        UsbRoot         = $null
+        IsoPath        = $IsoPath
+        Disk           = $disk
+        Mount          = $mount
+        PartitionStyle = $PartitionStyle
+        KeepIso        = [bool]$KeepIso
+        VolumeLabel    = $VolumeLabel
+        InstallWimPath = if (Test-Path $installWim) { $installWim } else { $null }
+        InstallEsdPath = if (Test-Path $installEsd) { $installEsd } else { $null }
+        NeedsWimSplit  = $needsSplit
+        SourceRoot     = $mount.RootPath
+        UsbRoot        = $null
     }
 }
 
@@ -1651,7 +1694,7 @@ function Write-WfuUsbMedia {
 
         [string]$UsbDiskId,
 
-        [ValidateSet('gpt','mbr')]
+        [ValidateSet('gpt', 'mbr')]
         [string]$PartitionStyle = 'gpt',
 
         [switch]$KeepIso,
@@ -1703,9 +1746,11 @@ function Write-WfuUsbMedia {
             if (Test-Path (Join-Path $usbSources 'install.wim')) {
                 Remove-Item (Join-Path $usbSources 'install.wim') -Force -ErrorAction SilentlyContinue
             }
-        } elseif (Test-Path $installWim) {
+        }
+        elseif (Test-Path $installWim) {
             Write-Log '  install.wim fits on FAT32 media; copied as-is.' -Level DEBUG
-        } elseif (Test-Path $installEsd) {
+        }
+        elseif (Test-Path $installEsd) {
             Write-Log '  install.esd detected; copied as-is.' -Level DEBUG
         }
 
@@ -1714,8 +1759,10 @@ function Write-WfuUsbMedia {
             try {
                 Dismount-WfuIsoImage -IsoPath $plan.IsoPath
                 Remove-Item $plan.IsoPath -Force -ErrorAction SilentlyContinue
-            } catch { }
-        } else {
+            }
+            catch { }
+        }
+        else {
             Dismount-WfuIsoImage -IsoPath $plan.IsoPath
         }
 
@@ -1729,7 +1776,8 @@ function Write-WfuUsbMedia {
             NeedsWimSplit  = $plan.NeedsWimSplit
             KeepIso        = [bool]$plan.KeepIso
         }
-    } catch {
+    }
+    catch {
         Write-Log "  USB media creation failed: $_" -Level ERROR
         try { if ($plan.IsoPath) { Dismount-WfuIsoImage -IsoPath $plan.IsoPath } } catch { }
         return $false

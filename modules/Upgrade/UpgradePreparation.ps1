@@ -26,7 +26,8 @@ function Set-HardwareBypasses {
             Write-Log '  [Bypass] Deleted CompatMarkers' -Level SUCCESS
         }
         $totalBypasses++
-    } catch { $failedBypasses++; Write-Log "  [Bypass] CompatMarkers delete failed: $_" -Level WARN }
+    }
+    catch { $failedBypasses++; Write-Log "  [Bypass] CompatMarkers delete failed: $_" -Level WARN }
 
     # 1b. Delete Shared -- cached shared appraiser data
     try {
@@ -36,7 +37,8 @@ function Set-HardwareBypasses {
             Write-Log '  [Bypass] Deleted Shared' -Level SUCCESS
         }
         $totalBypasses++
-    } catch { $failedBypasses++; Write-Log "  [Bypass] Shared delete failed: $_" -Level WARN }
+    }
+    catch { $failedBypasses++; Write-Log "  [Bypass] Shared delete failed: $_" -Level WARN }
 
     # 1c. Delete TargetVersionUpgradeExperienceIndicators -- safeguard holds
     try {
@@ -46,7 +48,8 @@ function Set-HardwareBypasses {
             Write-Log '  [Bypass] Deleted TargetVersionUpgradeExperienceIndicators' -Level SUCCESS
         }
         $totalBypasses++
-    } catch { $failedBypasses++; Write-Log "  [Bypass] TVUEI delete failed: $_" -Level WARN }
+    }
+    catch { $failedBypasses++; Write-Log "  [Bypass] TVUEI delete failed: $_" -Level WARN }
 
     # 1d. HwReqChkVars -- THE KEY BYPASS: spoof hardware check variables
     #     Instead of disabling the check, we feed it fake passing values.
@@ -66,7 +69,8 @@ function Set-HardwareBypasses {
         Set-ItemProperty -LiteralPath $hwReqKey -Name 'HwReqChkVars' -Value $spoofValues -Type MultiString -Force -ErrorAction Stop
         Write-Log '  [Bypass] HwReqChkVars = SecureBoot=TRUE, TPM=2, RAM=8192' -Level SUCCESS
         $totalBypasses++
-    } catch {
+    }
+    catch {
         $failedBypasses++
         Write-Log "  [Bypass] HwReqChkVars failed: $_" -Level WARN
         # Fallback: try via reg.exe in case PowerShell can't write REG_MULTI_SZ properly
@@ -77,7 +81,8 @@ function Set-HardwareBypasses {
                 $failedBypasses--
                 $totalBypasses++
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # 1e. MoSetup AllowUpgradesWithUnsupportedTPMOrCPU
@@ -93,7 +98,7 @@ function Set-HardwareBypasses {
 
     # 3. LabConfig -- bypasses used by Windows Setup (setup.exe fresh/upgrade)
     $labConfigKey = 'HKLM:\SYSTEM\Setup\LabConfig'
-    foreach ($bypass in @('BypassTPMCheck','BypassSecureBootCheck','BypassRAMCheck','BypassStorageCheck','BypassCPUCheck')) {
+    foreach ($bypass in @('BypassTPMCheck', 'BypassSecureBootCheck', 'BypassRAMCheck', 'BypassStorageCheck', 'BypassCPUCheck')) {
         if (Set-RegValue $labConfigKey $bypass 1 'LabConfig') { $totalBypasses++ } else { $failedBypasses++ }
     }
 
@@ -108,7 +113,8 @@ function Set-HardwareBypasses {
             Write-Log '  [UXSettings] IsExpedited = 1' -Level SUCCESS
             $totalBypasses++
         }
-    } catch { $failedBypasses++ }
+    }
+    catch { $failedBypasses++ }
 
     # 6. Product policy -- ensure edition allows upgrade
     if (Set-RegValue 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\OSUpgrade' 'AllowOSUpgrade' 1 'OSUpgrade') { $totalBypasses++ } else { $failedBypasses++ }
@@ -154,7 +160,7 @@ function Set-HardwareBypasses {
 
     # 9. Disable telemetry services (DiagTrack, dmwappushservice)
     $telemetryServices = @(
-        @{ Name = 'DiagTrack';        Display = 'Connected User Experiences and Telemetry' },
+        @{ Name = 'DiagTrack'; Display = 'Connected User Experiences and Telemetry' },
         @{ Name = 'dmwappushservice'; Display = 'WAP Push Message Routing Service' }
     )
     foreach ($ts in $telemetryServices) {
@@ -168,7 +174,8 @@ function Set-HardwareBypasses {
                 Write-Log "  [Telemetry] $($ts.Display) ($($ts.Name)) = Disabled" -Level SUCCESS
                 $totalBypasses++
             }
-        } catch {
+        }
+        catch {
             Write-Log "  [Telemetry] Could not disable $($ts.Name): $_" -Level WARN
             $failedBypasses++
         }
@@ -193,7 +200,8 @@ function Set-HardwareBypasses {
                 Disable-ScheduledTask -TaskPath ($taskPath | Split-Path -Parent) -TaskName ($taskPath | Split-Path -Leaf) -ErrorAction SilentlyContinue | Out-Null
                 $disabledTasks++
             }
-        } catch { }
+        }
+        catch { }
     }
     if ($disabledTasks -gt 0) {
         Write-Log "  [Telemetry] Disabled $disabledTasks scheduled tasks" -Level SUCCESS
@@ -229,7 +237,8 @@ function Set-HardwareBypasses {
                 }
                 $blockedHosts++
             }
-        } catch { }
+        }
+        catch { }
     }
     if ($blockedHosts -gt 0) {
         Write-Log "  [Telemetry] Null-routed $blockedHosts telemetry endpoints" -Level SUCCESS
@@ -242,7 +251,8 @@ function Set-HardwareBypasses {
 
     if ($failedBypasses -eq 0) {
         Write-Log "All $totalBypasses bypasses + telemetry blocks applied successfully." -Level SUCCESS
-    } else {
+    }
+    else {
         Write-Log "$totalBypasses applied, $failedBypasses failed (upgrade may still work)." -Level WARN
     }
 }
@@ -270,7 +280,8 @@ function Remove-UpgradeBlockers {
                 Remove-RegValue $wuKey 'ProductVersion'
             }
         }
-    } catch {
+    }
+    catch {
         Write-Log "TargetReleaseVersion check skipped: $_" -Level WARN
     }
 
@@ -290,7 +301,8 @@ function Remove-UpgradeBlockers {
                 }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Log "Safeguard hold check skipped: $_" -Level WARN
     }
 
@@ -310,7 +322,8 @@ function Remove-UpgradeBlockers {
                 Write-Log "Removing deferral: $($dk.Path)\$($dk.Name) = $val" -Level WARN
                 Remove-RegValue $dk.Path $dk.Name
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # 4. WSUS override -- temporarily disable if pointed at internal server
@@ -326,7 +339,8 @@ function Remove-UpgradeBlockers {
                 Set-RegValue $Script:ResumeRegKey 'OriginalUseWUServer' 1 ''
             }
         }
-    } catch { }
+    }
+    catch { }
 
     # 5. Windows Update service state
     try {
@@ -340,7 +354,8 @@ function Remove-UpgradeBlockers {
                 Start-Service wuauserv -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
             }
         }
-    } catch {
+    }
+    catch {
         Write-Log "Could not check/enable Windows Update service: $_" -Level WARN
     }
 
@@ -359,7 +374,8 @@ function Remove-UpgradeBlockers {
             Start-Service bits -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
             Start-Service wuauserv -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
         }
-    } catch { }
+    }
+    catch { }
 
     # 7. Group Policy feature update blocks
     foreach ($bv in @('DisableOSUpgrade', 'SetDisableUXWUAccess')) {
@@ -368,7 +384,8 @@ function Remove-UpgradeBlockers {
                 Write-Log "Group Policy block '$bv' is set -- removing." -Level WARN
                 Remove-RegValue $wuKey $bv
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # 8. AllowOSUpgrade
@@ -383,7 +400,8 @@ function Remove-UpgradeBlockers {
                 Write-Log 'Enterprise/Education -- ensure your organization allows feature updates.' -Level WARN
             }
         }
-    } catch { }
+    }
+    catch { }
 
     Write-Log 'Blocker removal complete.' -Level SUCCESS
 }
@@ -396,7 +414,7 @@ function Get-CurrentWindowsVersion {
     try {
         $ntVer = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction Stop
         $build = [int]$ntVer.CurrentBuildNumber
-        $ubr   = [int]$ntVer.UBR
+        $ubr = [int]$ntVer.UBR
 
         # DisplayVersion exists on Win10 2004+ and all Win11 (e.g. "22H2", "25H2")
         $displayVersion = $ntVer.DisplayVersion
@@ -413,7 +431,8 @@ function Get-CurrentWindowsVersion {
         $featureVersion = $null
         if ($displayVersion) {
             $featureVersion = $displayVersion  # e.g. "22H2", "25H2", "21H2"
-        } elseif ($releaseId -and $releaseId -ne '2009') {
+        }
+        elseif ($releaseId -and $releaseId -ne '2009') {
             # Old-style ReleaseId (1809, 1903, 1909, 2004)
             $featureVersion = $releaseId
         }
@@ -421,9 +440,10 @@ function Get-CurrentWindowsVersion {
         # Build the version key (e.g. "25H2" for Win11, "W10_22H2" for Win10)
         if ($featureVersion) {
             $versionKey = "${osPrefix}${featureVersion}"
-        } else {
+        }
+        else {
             # Last resort: guess from build number (only for ancient builds without DisplayVersion)
-            if     ($build -ge 22000) { $versionKey = '21H2' }       # Win11 RTM
+            if ($build -ge 22000) { $versionKey = '21H2' }       # Win11 RTM
             elseif ($build -ge 19041) { $versionKey = 'W10_2004' }   # generic 20H1 base
             elseif ($build -ge 18363) { $versionKey = 'W10_1909' }
             elseif ($build -ge 18362) { $versionKey = 'W10_1903' }
@@ -433,7 +453,7 @@ function Get-CurrentWindowsVersion {
             elseif ($build -ge 15063) { $versionKey = 'W10_1703' }
             elseif ($build -ge 14393) { $versionKey = 'W10_1607' }
             elseif ($build -ge 10240) { $versionKey = 'W10_1507' }
-            else                      { $versionKey = 'Unknown' }
+            else { $versionKey = 'Unknown' }
         }
 
         return @{
@@ -445,7 +465,8 @@ function Get-CurrentWindowsVersion {
             FullBuild      = "$build.$ubr"
             OS             = $osName
         }
-    } catch {
+    }
+    catch {
         Write-Log "CRITICAL: Cannot read Windows version from registry: $_" -Level ERROR
         return @{
             Build = 0; UBR = 0; DisplayVersion = 'Unknown'
@@ -529,13 +550,16 @@ function Install-EnablementPackage {
             if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq 3010) {
                 Write-Log 'DISM enablement package applied.' -Level SUCCESS
                 return $true
-            } else {
+            }
+            else {
                 Write-Log "DISM exited with code $LASTEXITCODE." -Level WARN
             }
-        } else {
+        }
+        else {
             Write-Log '  No staged enablement package found in DISM.' -Level WARN
         }
-    } catch {
+    }
+    catch {
         Write-Log "DISM method failed: $_" -Level WARN
     }
 
@@ -616,67 +640,69 @@ function Install-FeatureUpdate {
         }
         if ($assistantResult -is [array]) { $assistantResult = $assistantResult[-1] }
         if ($assistantResult -eq $true) { return $true }
-    } else {
+    }
+    else {
         Write-Log '  Installation Assistant: SKIPPED (disabled)' -Level DEBUG
     }
 
     # --- Fallback: Windows Update COM API ---
     if (-not $SkipWindowsUpdate) {
-    Write-Log '[Fallback] Trying Windows Update...'
-    $null = Repair-WindowsUpdateServices
-    $wuResult = Invoke-WithRetry -Description 'Windows Update feature search' -Action {
-        $updateSession = New-Object -ComObject Microsoft.Update.Session
-        $updateSearcher = $updateSession.CreateUpdateSearcher()
-        $searchResult = $updateSearcher.Search("IsInstalled=0")
+        Write-Log '[Fallback] Trying Windows Update...'
+        $null = Repair-WindowsUpdateServices
+        $wuResult = Invoke-WithRetry -Description 'Windows Update feature search' -Action {
+            $updateSession = New-Object -ComObject Microsoft.Update.Session
+            $updateSearcher = $updateSession.CreateUpdateSearcher()
+            $searchResult = $updateSearcher.Search("IsInstalled=0")
 
-        $featureUpdate = $null
-        foreach ($update in $searchResult.Updates) {
-            if ($update.Title -match "Feature update to Windows 11.*$($Step.To)" -or
-                $update.Title -match "Windows 11.*version $($Step.To)") {
-                $featureUpdate = $update
-                break
-            }
-        }
-        if (-not $featureUpdate) {
+            $featureUpdate = $null
             foreach ($update in $searchResult.Updates) {
-                if ($update.Title -match 'Feature update to Windows 11') {
+                if ($update.Title -match "Feature update to Windows 11.*$($Step.To)" -or
+                    $update.Title -match "Windows 11.*version $($Step.To)") {
                     $featureUpdate = $update
                     break
                 }
             }
+            if (-not $featureUpdate) {
+                foreach ($update in $searchResult.Updates) {
+                    if ($update.Title -match 'Feature update to Windows 11') {
+                        $featureUpdate = $update
+                        break
+                    }
+                }
+            }
+
+            if (-not $featureUpdate) { throw "Feature update to $($Step.To) not found in Windows Update." }
+
+            Write-Log "  Found: $($featureUpdate.Title)"
+            if (-not $featureUpdate.EulaAccepted) { $featureUpdate.AcceptEula() }
+
+            $updatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
+            $updatesToDownload.Add($featureUpdate) | Out-Null
+            $downloader = $updateSession.CreateUpdateDownloader()
+            $downloader.Updates = $updatesToDownload
+            $downloadResult = $downloader.Download()
+
+            if ($downloadResult.ResultCode -ne 2) { throw "Download failed with code $($downloadResult.ResultCode)." }
+            Write-Log '  Download complete.' -Level SUCCESS
+
+            $updatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
+            $updatesToInstall.Add($featureUpdate) | Out-Null
+            $installer = $updateSession.CreateUpdateInstaller()
+            $installer.Updates = $updatesToInstall
+            $installResult = $installer.Install()
+
+            switch ($installResult.ResultCode) {
+                2 { return $true }
+                3 { Write-Log '  Installed with errors -- check CBS logs.' -Level WARN; return $true }
+                default { throw "Install failed with code $($installResult.ResultCode)." }
+            }
         }
-
-        if (-not $featureUpdate) { throw "Feature update to $($Step.To) not found in Windows Update." }
-
-        Write-Log "  Found: $($featureUpdate.Title)"
-        if (-not $featureUpdate.EulaAccepted) { $featureUpdate.AcceptEula() }
-
-        $updatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
-        $updatesToDownload.Add($featureUpdate) | Out-Null
-        $downloader = $updateSession.CreateUpdateDownloader()
-        $downloader.Updates = $updatesToDownload
-        $downloadResult = $downloader.Download()
-
-        if ($downloadResult.ResultCode -ne 2) { throw "Download failed with code $($downloadResult.ResultCode)." }
-        Write-Log '  Download complete.' -Level SUCCESS
-
-        $updatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
-        $updatesToInstall.Add($featureUpdate) | Out-Null
-        $installer = $updateSession.CreateUpdateInstaller()
-        $installer.Updates = $updatesToInstall
-        $installResult = $installer.Install()
-
-        switch ($installResult.ResultCode) {
-            2 { return $true }
-            3 { Write-Log '  Installed with errors -- check CBS logs.' -Level WARN; return $true }
-            default { throw "Install failed with code $($installResult.ResultCode)." }
+        if ($wuResult -eq $true) {
+            Write-Log 'Feature update installed via Windows Update!' -Level SUCCESS
+            return $true
         }
     }
-    if ($wuResult -eq $true) {
-        Write-Log 'Feature update installed via Windows Update!' -Level SUCCESS
-        return $true
-    }
-    } else {
+    else {
         Write-Log '  Windows Update: SKIPPED (disabled)' -Level DEBUG
     }  # end SkipWindowsUpdate
 

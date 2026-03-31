@@ -13,7 +13,7 @@ function Get-ScriptScopedValue {
 function Write-Log {
     param(
         [string]$Message,
-        [ValidateSet('INFO','WARN','ERROR','SUCCESS','DEBUG')]
+        [ValidateSet('INFO', 'WARN', 'ERROR', 'SUCCESS', 'DEBUG')]
         [string]$Level = 'INFO'
     )
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -26,11 +26,11 @@ function Write-Log {
     }
 
     switch ($Level) {
-        'ERROR'   { Write-Host $entry -ForegroundColor Red; [void]$Script:ErrorLog.Add($entry) }
-        'WARN'    { Write-Host $entry -ForegroundColor Yellow }
+        'ERROR' { Write-Host $entry -ForegroundColor Red; [void]$Script:ErrorLog.Add($entry) }
+        'WARN' { Write-Host $entry -ForegroundColor Yellow }
         'SUCCESS' { Write-Host $entry -ForegroundColor Green }
-        'DEBUG'   { Write-Host $entry -ForegroundColor DarkGray }
-        default   { Write-Host $entry -ForegroundColor Cyan }
+        'DEBUG' { Write-Host $entry -ForegroundColor DarkGray }
+        default { Write-Host $entry -ForegroundColor Cyan }
     }
 }
 
@@ -80,7 +80,8 @@ function Complete-Phase {
 
     if ($Fail) {
         Write-Host "`r  X $msg [${secs}s]       " -ForegroundColor Red
-    } else {
+    }
+    else {
         Write-Host "`r  $([char]0x2713) $msg [${secs}s]       " -ForegroundColor Green
     }
 
@@ -99,7 +100,8 @@ function Get-RegValue {
         $item = Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue
         if ($null -eq $item) { return $null }
         return $item.GetValue($Name, $null)
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -123,7 +125,8 @@ function Set-RegValue {
         Set-ItemProperty -LiteralPath $Path -Name $Name -Value $Value -Type DWord -Force -ErrorAction Stop
         if ($Label) { Write-Log "  [$Label] $Name = $Value" -Level SUCCESS }
         return $true
-    } catch {
+    }
+    catch {
         $msg = "  Failed to set $Path\$Name"
         if ($Label) { $msg = "  [$Label] $msg" }
         Write-Log "$msg : $_" -Level WARN
@@ -141,7 +144,8 @@ function Remove-RegValue {
         if (Test-Path $Path) {
             Remove-ItemProperty -LiteralPath $Path -Name $Name -ErrorAction SilentlyContinue
         }
-    } catch { }
+    }
+    catch { }
 }
 
 function Stop-ServiceSafe {
@@ -164,7 +168,8 @@ function Stop-ServiceSafe {
         $svc.Stop()
         try {
             $svc.WaitForStatus('Stopped', [TimeSpan]::FromSeconds($TimeoutSec))
-        } catch {
+        }
+        catch {
             # Timeout -- force kill the process
             Write-Log "  Service '$Name' did not stop within ${TimeoutSec}s -- force killing." -Level WARN
             try {
@@ -173,12 +178,14 @@ function Stop-ServiceSafe {
                     Stop-Process -Id $wmi.ProcessId -Force -ErrorAction SilentlyContinue
                     Write-Log "  Killed PID $($wmi.ProcessId) for $Name." -Level DEBUG
                 }
-            } catch {
+            }
+            catch {
                 # Last resort: taskkill
                 & taskkill.exe /F /FI "SERVICES eq $Name" 2>$null | Out-Null
             }
         }
-    } catch {
+    }
+    catch {
         # Service may not exist or we may not have permission -- that's OK
     }
 }
@@ -200,12 +207,14 @@ function Invoke-WithRetry {
         try {
             $result = & $Action
             return $result
-        } catch {
+        }
+        catch {
             $delay = $BaseDelaySec * [math]::Pow(2, $attempt - 1)
             if ($attempt -lt $MaxAttempts) {
                 Write-Log "  $Description failed (attempt $attempt/$MaxAttempts): $_ -- retrying in ${delay}s..." -Level WARN
                 Start-Sleep -Seconds $delay
-            } else {
+            }
+            else {
                 Write-Log "  $Description failed after $MaxAttempts attempts: $_" -Level ERROR
             }
         }
@@ -232,7 +241,8 @@ function Repair-WindowsUpdateServices {
                 Stop-ServiceSafe $svc
                 Write-Log "  Stopped $svc" -Level DEBUG
             }
-        } catch { }
+        }
+        catch { }
     }
 
     # Rename SoftwareDistribution and catroot2 to force fresh state
@@ -247,7 +257,8 @@ function Repair-WindowsUpdateServices {
                 Rename-Item $folder $backup -Force -ErrorAction SilentlyContinue
                 Write-Log "  Renamed $folder -> $backup" -Level DEBUG
             }
-        } catch {
+        }
+        catch {
             Write-Log "  Could not rename $folder : $_" -Level WARN
         }
     }
@@ -271,7 +282,8 @@ function Repair-WindowsUpdateServices {
                 & regsvr32.exe /s $dllPath 2>$null
                 $regCount++
             }
-        } catch { }
+        }
+        catch { }
     }
     Write-Log "  Re-registered $regCount DLLs" -Level DEBUG
 
@@ -280,7 +292,8 @@ function Repair-WindowsUpdateServices {
         & netsh.exe winsock reset 2>$null | Out-Null
         & netsh.exe winhttp reset proxy 2>$null | Out-Null
         Write-Log '  Winsock and WinHTTP proxy reset' -Level DEBUG
-    } catch { }
+    }
+    catch { }
 
     # Restart all services
     foreach ($svc in $services) {
@@ -293,7 +306,8 @@ function Repair-WindowsUpdateServices {
                 Start-Service $svc -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
                 Write-Log "  Started $svc" -Level DEBUG
             }
-        } catch { }
+        }
+        catch { }
     }
 
     Write-Log 'Windows Update service recovery complete.' -Level SUCCESS
@@ -309,8 +323,8 @@ function Test-NetworkReadiness {
 
     $endpoints = @(
         @{ Host = 'download.windowsupdate.com'; Port = 443 },
-        @{ Host = 'update.microsoft.com';       Port = 443 },
-        @{ Host = 'go.microsoft.com';           Port = 443 },
+        @{ Host = 'update.microsoft.com'; Port = 443 },
+        @{ Host = 'go.microsoft.com'; Port = 443 },
         @{ Host = 'dl.delivery.mp.microsoft.com'; Port = 443 }
     )
 
@@ -323,11 +337,13 @@ function Test-NetworkReadiness {
             if ($completed -and $tcp.Connected) {
                 Write-Log "  OK: $($ep.Host):$($ep.Port)" -Level DEBUG
                 $reachable++
-            } else {
+            }
+            else {
                 Write-Log "  TIMEOUT: $($ep.Host):$($ep.Port)" -Level WARN
             }
             $tcp.Close()
-        } catch {
+        }
+        catch {
             Write-Log "  FAIL: $($ep.Host):$($ep.Port) -- $_" -Level WARN
         }
     }
@@ -335,10 +351,12 @@ function Test-NetworkReadiness {
     if ($reachable -eq 0) {
         Write-Log 'No Windows Update endpoints reachable -- check network/firewall/proxy.' -Level ERROR
         return $false
-    } elseif ($reachable -lt $endpoints.Count) {
+    }
+    elseif ($reachable -lt $endpoints.Count) {
         Write-Log "$reachable/$($endpoints.Count) endpoints reachable -- some may be blocked." -Level WARN
         return $true
-    } else {
+    }
+    else {
         Write-Log 'All Windows Update endpoints reachable.' -Level SUCCESS
         return $true
     }

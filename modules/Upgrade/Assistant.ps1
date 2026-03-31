@@ -19,7 +19,8 @@ function Install-SetupHostBypassHook {
             }
             Remove-Item $hookScript -Force -ErrorAction SilentlyContinue
             Write-Log '  [IFEO] SetupHost.exe hook removed.' -Level DEBUG
-        } catch { }
+        }
+        catch { }
         return
     }
 
@@ -82,7 +83,8 @@ for %%A in ("%SOURCES%\appraiserres.dll") do if %%~zA equ 0 (set "TRICK=/Product
 
         Write-Log '  [IFEO] SetupHost.exe hook registered.' -Level SUCCESS
         return $true
-    } catch {
+    }
+    catch {
         Write-Log "  [IFEO] Hook installation failed: $_" -Level WARN
         return $false
     }
@@ -107,7 +109,7 @@ function Test-UpgradeActuallyStarted {
     }
 
     # 2. SetupHost.exe or SetupPrep.exe is running
-    $setupProcs = Get-Process -Name 'SetupHost','SetupPrep','WindowsUpdateBox' -ErrorAction SilentlyContinue
+    $setupProcs = Get-Process -Name 'SetupHost', 'SetupPrep', 'WindowsUpdateBox' -ErrorAction SilentlyContinue
     if ($setupProcs) {
         $evidence += "Setup process running: $($setupProcs.Name -join ', ')"
     }
@@ -142,7 +144,8 @@ function Test-UpgradeActuallyStarted {
     if ($evidence.Count -gt 0) {
         Write-Log "  Upgrade evidence found: $($evidence -join '; ')" -Level SUCCESS
         return $true
-    } else {
+    }
+    else {
         Write-Log '  No evidence of upgrade activity found.' -Level WARN
         return $false
     }
@@ -162,7 +165,7 @@ function Install-ViaInstallationAssistant {
     param([hashtable]$Step)
 
     $assistantPath = Join-Path $DownloadPath 'Windows11InstallationAssistant.exe'
-    $assistantUrl  = 'https://go.microsoft.com/fwlink/?linkid=2171764'
+    $assistantUrl = 'https://go.microsoft.com/fwlink/?linkid=2171764'
 
     # Download the assistant if not present or suspiciously small
     $needsDownload = (-not (Test-Path $assistantPath)) -or ((Get-Item $assistantPath -ErrorAction SilentlyContinue).Length -lt 1MB)
@@ -179,7 +182,8 @@ function Install-ViaInstallationAssistant {
             $ProgressPreference = 'Continue'
             $downloaded = $true
             Write-Log '  Download complete (Invoke-WebRequest).' -Level SUCCESS
-        } catch {
+        }
+        catch {
             Write-Log "  Invoke-WebRequest failed: $_" -Level WARN
         }
 
@@ -189,7 +193,8 @@ function Install-ViaInstallationAssistant {
                 Start-BitsTransfer -Source $assistantUrl -Destination $assistantPath -ErrorAction Stop
                 $downloaded = $true
                 Write-Log '  Download complete (BITS).' -Level SUCCESS
-            } catch {
+            }
+            catch {
                 Write-Log "  BITS failed: $_" -Level WARN
             }
         }
@@ -200,7 +205,8 @@ function Install-ViaInstallationAssistant {
                 (New-Object System.Net.WebClient).DownloadFile($assistantUrl, $assistantPath)
                 $downloaded = $true
                 Write-Log '  Download complete (WebClient).' -Level SUCCESS
-            } catch {
+            }
+            catch {
                 Write-Log "  WebClient failed: $_" -Level WARN
             }
         }
@@ -213,7 +219,8 @@ function Install-ViaInstallationAssistant {
                     & $curlExe -L -o $assistantPath $assistantUrl 2>$null
                     if ($LASTEXITCODE -eq 0) { $downloaded = $true; Write-Log '  Download complete (curl).' -Level SUCCESS }
                 }
-            } catch { }
+            }
+            catch { }
         }
 
         if (-not $downloaded) {
@@ -335,7 +342,8 @@ function Install-ViaInstallationAssistant {
                                 $p.Kill()
                                 $killed[$p.Id] = $p.Name
                                 Write-Log "  [Kill] $($p.Name) (PID $($p.Id)) -- health check blocked" -Level WARN
-                            } catch { }
+                            }
+                            catch { }
                         }
                     }
                 }
@@ -352,8 +360,8 @@ function Install-ViaInstallationAssistant {
                 foreach ($pattern in $upgradePatterns) {
                     # Only count processes that started AFTER our launch
                     $upgradeProcs += @($allProcs | Where-Object {
-                        $_.Name -like "*$pattern*" -and $beforePids -notcontains $_.Id
-                    })
+                            $_.Name -like "*$pattern*" -and $beforePids -notcontains $_.Id
+                        })
                 }
                 if ($upgradeProcs.Count -gt 0 -and -not $upgradeStarted) {
                     $upgradeStarted = $true
@@ -369,7 +377,8 @@ function Install-ViaInstallationAssistant {
                         Write-Log '  Assistant exited and no upgrade processes detected.' -Level DEBUG
                         break
                     }
-                } else {
+                }
+                else {
                     $noActivityCount = 0
                 }
 
@@ -384,7 +393,8 @@ function Install-ViaInstallationAssistant {
             $exitCode = 0
             try {
                 if ($proc.HasExited) { $exitCode = $proc.ExitCode }
-            } catch { $exitCode = 0 }
+            }
+            catch { $exitCode = 0 }
             Write-Log "  Parent process exit code: $exitCode (parent may have spawned children)" -Level DEBUG
 
             # ================================================================
@@ -405,7 +415,8 @@ function Install-ViaInstallationAssistant {
                         Write-Log "  Installation Assistant: upgrade confirmed (code $exitCode)." -Level SUCCESS
                         Install-SetupHostBypassHook -Remove
                         return $true
-                    } else {
+                    }
+                    else {
                         # Exit code 0 but no upgrade evidence -- compat tool was just dismissed
                         Write-Log "  Installation Assistant exited with code $exitCode but NO upgrade evidence found." -Level WARN
                         Write-Log '  The compatibility check window was likely closed without upgrading.' -Level WARN
@@ -435,7 +446,8 @@ function Install-ViaInstallationAssistant {
                     return $false
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Log "  Installation Assistant error: $_" -Level WARN
             Install-SetupHostBypassHook -Remove
             return $false

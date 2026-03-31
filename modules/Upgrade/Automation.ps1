@@ -21,42 +21,42 @@ function Get-WfuDefaultOptions {
     param()
 
     [ordered]@{
-        Mode              = 'Interactive'
-        TargetVersion     = '25H2'
-        LogPath           = $null
-        DownloadPath      = 'C:\wfu-tool'
-        NoReboot          = $false
-        DirectIso         = $false
-        AllowFallback     = $false
-        ForceOnlineUpdate = $false
-        MaxRetries        = 2
-        SkipBypasses      = $false
-        SkipBlockerRemoval = $false
-        SkipTelemetry     = $false
-        SkipRepair        = $false
+        Mode                  = 'Interactive'
+        TargetVersion         = '25H2'
+        LogPath               = $null
+        DownloadPath          = 'C:\wfu-tool'
+        NoReboot              = $false
+        DirectIso             = $false
+        AllowFallback         = $false
+        ForceOnlineUpdate     = $false
+        MaxRetries            = 2
+        SkipBypasses          = $false
+        SkipBlockerRemoval    = $false
+        SkipTelemetry         = $false
+        SkipRepair            = $false
         SkipCumulativeUpdates = $false
-        SkipNetworkCheck  = $false
-        SkipDiskCheck     = $false
-        SkipDirectEsd     = $false
-        SkipEsd           = $false
-        SkipFido          = $false
-        SkipMct           = $false
-        SkipAssistant     = $false
-        SkipWindowsUpdate = $false
-        CreateUsb         = $false
-        UsbDiskNumber     = $null
-        UsbDiskId         = $null
-        KeepIso           = $false
-        UsbPartitionStyle = 'gpt'
-        PreferredSource   = $null
-        ForceSource       = $null
-        AllowDeadSources  = $false
-        CheckpointPath    = $null
-        SessionId         = $null
-        ResumeFromCheckpoint = $false
-        ResumeEnabled     = $true
-        DiscardCachedMedia = $false
-        SourceHealth      = [ordered]@{}
+        SkipNetworkCheck      = $false
+        SkipDiskCheck         = $false
+        SkipDirectEsd         = $false
+        SkipEsd               = $false
+        SkipFido              = $false
+        SkipMct               = $false
+        SkipAssistant         = $false
+        SkipWindowsUpdate     = $false
+        CreateUsb             = $false
+        UsbDiskNumber         = $null
+        UsbDiskId             = $null
+        KeepIso               = $false
+        UsbPartitionStyle     = 'gpt'
+        PreferredSource       = $null
+        ForceSource           = $null
+        AllowDeadSources      = $false
+        CheckpointPath        = $null
+        SessionId             = $null
+        ResumeFromCheckpoint  = $false
+        ResumeEnabled         = $true
+        DiscardCachedMedia    = $false
+        SourceHealth          = [ordered]@{}
     }
 }
 
@@ -110,8 +110,8 @@ function ConvertTo-WfuTriState {
 
     if ($null -eq $Value) { return 'auto' }
     $text = ([string]$Value).Trim().ToLowerInvariant()
-    if ($text -in @('true','1','yes','on','enabled')) { return 'enabled' }
-    if ($text -in @('false','0','no','off','disabled')) { return 'disabled' }
+    if ($text -in @('true', '1', 'yes', 'on', 'enabled')) { return 'enabled' }
+    if ($text -in @('false', '0', 'no', 'off', 'disabled')) { return 'disabled' }
     return 'auto'
 }
 
@@ -366,7 +366,8 @@ function Read-WfuCheckpoint {
     if (-not (Test-Path $Path)) { return $null }
     try {
         return (Get-Content -Path $Path -Raw | ConvertFrom-Json -AsHashtable)
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -435,7 +436,8 @@ function Get-WfuOrderedSourceIds {
         $preferred = $PreferredSource.ToUpperInvariant()
         if ($ordered -contains $preferred) {
             $ordered = @($preferred) + @($ordered | Where-Object { $_ -ne $preferred })
-        } elseif ($AllowDeadSources -and (Get-WfuSourceHealth -SourceId $preferred -HealthMap $HealthMap) -eq 'dead') {
+        }
+        elseif ($AllowDeadSources -and (Get-WfuSourceHealth -SourceId $preferred -HealthMap $HealthMap) -eq 'dead') {
             $ordered = @($preferred) + $ordered
         }
     }
@@ -461,9 +463,11 @@ function ConvertTo-WfuCliOptions {
 
     if ($BoundParameters.Contains('Headless') -and $CurrentValues['Headless']) {
         $cli['Mode'] = 'AutomatedUpgrade'
-    } elseif (($BoundParameters.Contains('CreateUsb') -and $CurrentValues['CreateUsb']) -and -not $cli.Contains('Mode')) {
+    }
+    elseif (($BoundParameters.Contains('CreateUsb') -and $CurrentValues['CreateUsb']) -and -not $cli.Contains('Mode')) {
         $cli['Mode'] = 'UsbFromIso'
-    } elseif ($BoundParameters.Contains('Interactive') -and $CurrentValues['Interactive']) {
+    }
+    elseif ($BoundParameters.Contains('Interactive') -and $CurrentValues['Interactive']) {
         $cli['Mode'] = 'Interactive'
     }
 
@@ -486,7 +490,8 @@ function Resolve-WfuModeOptions {
     if ($mode -eq 'Interactive') {
         if ($resolved.Contains('Headless') -and (ConvertTo-WfuBoolean $resolved['Headless'] $false)) {
             $mode = 'AutomatedUpgrade'
-        } elseif ($resolved.Contains('CreateUsb') -and (ConvertTo-WfuBoolean $resolved['CreateUsb'] $false)) {
+        }
+        elseif ($resolved.Contains('CreateUsb') -and (ConvertTo-WfuBoolean $resolved['CreateUsb'] $false)) {
             $mode = 'UsbFromIso'
         }
     }
@@ -546,10 +551,12 @@ function New-WfuResolvedOptions {
     if ($merged.Mode -eq 'UsbFromIso') {
         $merged.CreateUsb = $true
         if (-not $merged.DirectIso) { $merged.DirectIso = $true }
-    } elseif ($merged.Mode -eq 'IsoDownload') {
+    }
+    elseif ($merged.Mode -eq 'IsoDownload') {
         $merged.CreateUsb = $false
         $merged.DirectIso = $true
-    } elseif ($merged.Mode -eq 'AutomatedUpgrade') {
+    }
+    elseif ($merged.Mode -eq 'AutomatedUpgrade') {
         if ($merged.Contains('Headless')) { $merged.Headless = $true }
         $merged.CreateUsb = $false
     }
@@ -626,63 +633,63 @@ function ConvertTo-WfuIniLines {
     $sourceHealth = if ($Options.Contains('SourceHealth') -and $Options.SourceHealth) { $Options.SourceHealth } else { [ordered]@{} }
 
     $sections = [ordered]@{
-        general = [ordered]@{
-            mode = ([string]$Options.Mode).ToLowerInvariant()
-            target_version = $Options.TargetVersion
-            log_path = $Options.LogPath
-            download_path = $Options.DownloadPath
-            no_reboot = ConvertTo-WfuIniBoolean ([bool]$Options.NoReboot)
-            direct_iso = ConvertTo-WfuIniBoolean ([bool]$Options.DirectIso)
-            allow_fallback = ConvertTo-WfuIniBoolean ([bool]$Options.AllowFallback)
+        general       = [ordered]@{
+            mode                = ([string]$Options.Mode).ToLowerInvariant()
+            target_version      = $Options.TargetVersion
+            log_path            = $Options.LogPath
+            download_path       = $Options.DownloadPath
+            no_reboot           = ConvertTo-WfuIniBoolean ([bool]$Options.NoReboot)
+            direct_iso          = ConvertTo-WfuIniBoolean ([bool]$Options.DirectIso)
+            allow_fallback      = ConvertTo-WfuIniBoolean ([bool]$Options.AllowFallback)
             force_online_update = ConvertTo-WfuIniBoolean ([bool]$Options.ForceOnlineUpdate)
         }
-        checks = [ordered]@{
-            bypasses = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipBypasses))
-            blocker_removal = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipBlockerRemoval))
-            telemetry = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipTelemetry))
-            repair = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipRepair))
+        checks        = [ordered]@{
+            bypasses           = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipBypasses))
+            blocker_removal    = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipBlockerRemoval))
+            telemetry          = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipTelemetry))
+            repair             = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipRepair))
             cumulative_updates = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipCumulativeUpdates))
-            network_check = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipNetworkCheck))
-            disk_check = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipDiskCheck))
+            network_check      = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipNetworkCheck))
+            disk_check         = ConvertTo-WfuIniBoolean ([bool](-not $Options.SkipDiskCheck))
         }
-        sources = [ordered]@{
-            direct_esd = if ($Options.SkipDirectEsd) { 'disabled' } else { 'auto' }
-            esd = if ($Options.SkipEsd) { 'disabled' } else { 'auto' }
-            fido = if ($Options.SkipFido) { 'disabled' } else { 'auto' }
-            mct = if ($Options.SkipMct) { 'disabled' } else { 'auto' }
-            assistant = if ($Options.SkipAssistant) { 'disabled' } else { 'auto' }
-            windows_update = if ($Options.SkipWindowsUpdate) { 'disabled' } else { 'auto' }
-            preferred_source = $Options.PreferredSource
-            force_source = $Options.ForceSource
+        sources       = [ordered]@{
+            direct_esd         = if ($Options.SkipDirectEsd) { 'disabled' } else { 'auto' }
+            esd                = if ($Options.SkipEsd) { 'disabled' } else { 'auto' }
+            fido               = if ($Options.SkipFido) { 'disabled' } else { 'auto' }
+            mct                = if ($Options.SkipMct) { 'disabled' } else { 'auto' }
+            assistant          = if ($Options.SkipAssistant) { 'disabled' } else { 'auto' }
+            windows_update     = if ($Options.SkipWindowsUpdate) { 'disabled' } else { 'auto' }
+            preferred_source   = $Options.PreferredSource
+            force_source       = $Options.ForceSource
             allow_dead_sources = ConvertTo-WfuIniBoolean ([bool]$Options.AllowDeadSources)
         }
-        usb = [ordered]@{
-            create_usb = ConvertTo-WfuIniBoolean ([bool]$Options.CreateUsb)
-            disk_number = if ($null -ne $Options.UsbDiskNumber) { [string]$Options.UsbDiskNumber } else { '' }
-            disk_id = $Options.UsbDiskId
-            keep_iso = ConvertTo-WfuIniBoolean ([bool]$Options.KeepIso)
+        usb           = [ordered]@{
+            create_usb      = ConvertTo-WfuIniBoolean ([bool]$Options.CreateUsb)
+            disk_number     = if ($null -ne $Options.UsbDiskNumber) { [string]$Options.UsbDiskNumber } else { '' }
+            disk_id         = $Options.UsbDiskId
+            keep_iso        = ConvertTo-WfuIniBoolean ([bool]$Options.KeepIso)
             partition_style = $Options.UsbPartitionStyle
         }
-        resume = [ordered]@{
-            enabled = ConvertTo-WfuIniBoolean ([bool]$Options.ResumeEnabled)
-            checkpoint_path = $Options.CheckpointPath
+        resume        = [ordered]@{
+            enabled                = ConvertTo-WfuIniBoolean ([bool]$Options.ResumeEnabled)
+            checkpoint_path        = $Options.CheckpointPath
             resume_from_checkpoint = ConvertTo-WfuIniBoolean ([bool]$Options.ResumeFromCheckpoint)
         }
         source_health = [ordered]@{}
     }
 
     foreach ($id in @(
-        $sourceIds.DirectMetadata,
-        $sourceIds.ESD,
-        $sourceIds.Fido,
-        $sourceIds.MCT,
-        $sourceIds.Assistant,
-        $sourceIds.WindowsUpdate,
-        $sourceIds.LegacyXml,
-        $sourceIds.LegacyCab,
-        $sourceIds.LegacyMctX64,
-        $sourceIds.LegacyMctX86
-    )) {
+            $sourceIds.DirectMetadata,
+            $sourceIds.ESD,
+            $sourceIds.Fido,
+            $sourceIds.MCT,
+            $sourceIds.Assistant,
+            $sourceIds.WindowsUpdate,
+            $sourceIds.LegacyXml,
+            $sourceIds.LegacyCab,
+            $sourceIds.LegacyMctX64,
+            $sourceIds.LegacyMctX86
+        )) {
         if ($sourceHealth.Contains($id)) {
             $sections.source_health[$id] = $sourceHealth[$id]
         }

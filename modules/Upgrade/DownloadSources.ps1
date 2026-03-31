@@ -5,24 +5,24 @@ function Get-WindowsEditionKeys {
         These are NOT activation keys -- they only tell setup.exe which edition to install.
     #>
     return @{
-        'Cloud'                      = 'V3WVW-N2PV2-CGWC3-34QGF-VMJ2C'
-        'CloudN'                     = 'NH9J3-68WK7-6FB93-4K3DF-DJ4F6'
-        'Core'                       = 'YTMG3-N6DKC-DKB77-7M9GH-8HVX7'
-        'CoreN'                      = '4CPRK-NM3K3-X6XXQ-RXX86-WXCHW'
-        'CoreSingleLanguage'         = 'BT79Q-G7N6G-PGBYW-4YWX6-6F4BT'
-        'CoreCountrySpecific'        = 'N2434-X9D7W-8PF6X-8DV9T-8TYMD'
-        'Professional'               = 'VK7JG-NPHTM-C97JM-9MPGT-3V66T'
-        'ProfessionalN'              = '2B87N-8KFHP-DKV6R-Y2C8J-PKCKT'
-        'ProfessionalEducation'      = '8PTT6-RNW4C-6V7J2-C2D3X-MHBPB'
-        'ProfessionalEducationN'     = 'GJTYN-HDMQY-FRR76-HVGC7-QPF8P'
-        'ProfessionalWorkstation'    = 'DXG7C-N36C4-C4HTG-X4T3X-2YV77'
-        'ProfessionalWorkstationN'   = 'WYPNQ-8C467-V2W6J-TX4WX-WT2RQ'
-        'Education'                  = 'YNMGQ-8RYV3-4PGQ3-C8XTP-7CFBY'
-        'EducationN'                 = '84NGF-MHBT6-FXBX8-QWJK7-DRR8H'
-        'Enterprise'                 = 'NPPR9-FWDCX-D2C8J-H872K-2YT43'
-        'EnterpriseN'                = 'DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4'
-        'EnterpriseS'                = 'NK96Y-D9CD8-W44CQ-R8YTK-DYJWX'
-        'EnterpriseSN'               = '2DBW3-N2PJG-MVHW3-G7TDK-9HKR4'
+        'Cloud'                    = 'V3WVW-N2PV2-CGWC3-34QGF-VMJ2C'
+        'CloudN'                   = 'NH9J3-68WK7-6FB93-4K3DF-DJ4F6'
+        'Core'                     = 'YTMG3-N6DKC-DKB77-7M9GH-8HVX7'
+        'CoreN'                    = '4CPRK-NM3K3-X6XXQ-RXX86-WXCHW'
+        'CoreSingleLanguage'       = 'BT79Q-G7N6G-PGBYW-4YWX6-6F4BT'
+        'CoreCountrySpecific'      = 'N2434-X9D7W-8PF6X-8DV9T-8TYMD'
+        'Professional'             = 'VK7JG-NPHTM-C97JM-9MPGT-3V66T'
+        'ProfessionalN'            = '2B87N-8KFHP-DKV6R-Y2C8J-PKCKT'
+        'ProfessionalEducation'    = '8PTT6-RNW4C-6V7J2-C2D3X-MHBPB'
+        'ProfessionalEducationN'   = 'GJTYN-HDMQY-FRR76-HVGC7-QPF8P'
+        'ProfessionalWorkstation'  = 'DXG7C-N36C4-C4HTG-X4T3X-2YV77'
+        'ProfessionalWorkstationN' = 'WYPNQ-8C467-V2W6J-TX4WX-WT2RQ'
+        'Education'                = 'YNMGQ-8RYV3-4PGQ3-C8XTP-7CFBY'
+        'EducationN'               = '84NGF-MHBT6-FXBX8-QWJK7-DRR8H'
+        'Enterprise'               = 'NPPR9-FWDCX-D2C8J-H872K-2YT43'
+        'EnterpriseN'              = 'DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4'
+        'EnterpriseS'              = 'NK96Y-D9CD8-W44CQ-R8YTK-DYJWX'
+        'EnterpriseSN'             = '2DBW3-N2PJG-MVHW3-G7TDK-9HKR4'
     }
 }
 
@@ -45,26 +45,26 @@ function Get-LegacyWindows10MediaManifest {
             $health = if ($preferredSource) { $preferredSource.Health } else { 'unknown' }
             $healthReason = if ($preferredSource) { $preferredSource.HealthReason } else { '' }
             [pscustomobject]@{
-                Version            = $_.Version
-                Build              = $_.Build
-                DisplayVersion     = $_.DisplayVersion
-                OS                 = $_.OS
-                Name               = $name
-                Source             = 'Legacy Manifest'
-                SourceFamily       = 'LegacyManifest'
-                DiscoverySource    = 'Pinned Manifest'
-                SourceId           = if ($preferredSource) { $preferredSource.SourceId } else { $null }
-                Health             = $health
-                HealthReason       = $healthReason
-                Selectable         = ($sources.Count -gt 0)
-                AutoEligible       = ($autoEligibleSources.Count -gt 0)
-                Available          = $true
-                SupportsWU         = $supportsWu
-                SupportsFido       = $supportsFido
-                SupportsCatalog    = $supportsCatalog
-                SupportsMct        = $supportsMct
-                SourceIds          = @($sources | ForEach-Object { $_.SourceId } | Where-Object { $_ })
-                Sources            = @($sources)
+                Version         = $_.Version
+                Build           = $_.Build
+                DisplayVersion  = $_.DisplayVersion
+                OS              = $_.OS
+                Name            = $name
+                Source          = 'Legacy Manifest'
+                SourceFamily    = 'LegacyManifest'
+                DiscoverySource = 'Pinned Manifest'
+                SourceId        = if ($preferredSource) { $preferredSource.SourceId } else { $null }
+                Health          = $health
+                HealthReason    = $healthReason
+                Selectable      = ($sources.Count -gt 0)
+                AutoEligible    = ($autoEligibleSources.Count -gt 0)
+                Available       = $true
+                SupportsWU      = $supportsWu
+                SupportsFido    = $supportsFido
+                SupportsCatalog = $supportsCatalog
+                SupportsMct     = $supportsMct
+                SourceIds       = @($sources | ForEach-Object { $_.SourceId } | Where-Object { $_ })
+                Sources         = @($sources)
             }
         }
     )
@@ -140,16 +140,18 @@ function Add-UniqueRemoteVersion {
             }
             if ($existing.PSObject.Properties.Name -contains 'Sources') {
                 $existing.Sources = @($existingSources)
-            } else {
+            }
+            else {
                 $existing | Add-Member -NotePropertyName Sources -NotePropertyValue @($existingSources) -Force
             }
         }
 
-        foreach ($propName in @('SourceId','Health','HealthReason','Selectable','AutoEligible','SourceIds')) {
+        foreach ($propName in @('SourceId', 'Health', 'HealthReason', 'Selectable', 'AutoEligible', 'SourceIds')) {
             if ($Item.PSObject.Properties.Name -contains $propName) {
                 if ($existing.PSObject.Properties.Name -contains $propName) {
                     $existing.$propName = $Item.$propName
-                } else {
+                }
+                else {
                     $existing | Add-Member -NotePropertyName $propName -NotePropertyValue $Item.$propName -Force
                 }
             }
@@ -197,7 +199,8 @@ function Get-RemoteAvailableVersions {
                 $wuWorked = $true
             }
             Start-Sleep -Milliseconds 400
-        } catch {
+        }
+        catch {
             Write-Log "  ${targetVersion}: direct WU query failed -- $_" -Level DEBUG
         }
     }
@@ -231,18 +234,19 @@ function Get-RemoteAvailableVersions {
                     $fileName = if ($engSku -and $engSku.FriendlyFileNames) { $engSku.FriendlyFileNames[0] } else { '' }
 
                     [void]$available.Add(@{
-                        Version          = $product.Version
-                        Build            = $product.Build
-                        OS               = $product.OS
-                        Name             = $product.Name
-                        LangCount        = $skus.Count
-                        FriendlyFileName = $fileName
-                        Source           = 'Microsoft API'
-                        Available        = $true
-                    })
+                            Version          = $product.Version
+                            Build            = $product.Build
+                            OS               = $product.OS
+                            Name             = $product.Name
+                            LangCount        = $skus.Count
+                            FriendlyFileName = $fileName
+                            Source           = 'Microsoft API'
+                            Available        = $true
+                        })
                     Write-Log "  $($product.Version): $($product.Name) -- $($skus.Count) languages (Fido)" -Level SUCCESS
                 }
-            } catch {
+            }
+            catch {
                 Write-Log "  $($product.Version): Fido query failed -- $_" -Level DEBUG
             }
         }
@@ -273,21 +277,21 @@ function Get-DirectIsoDownloadUrl {
 
     # Edition IDs per version (from Fido)
     $editionIds = @{
-        '25H2'      = 3262
-        '24H2'      = 3113
-        '23H2'      = 2935
-        '22H2'      = 2935
-        '21H2'      = 2935
-        'W10_22H2'  = 2618
-        'W10_21H2'  = 2618
-        'W10_20H2'  = 2618
+        '25H2'     = 3262
+        '24H2'     = 3113
+        '23H2'     = 2935
+        '22H2'     = 2935
+        '21H2'     = 2935
+        'W10_22H2' = 2618
+        'W10_21H2' = 2618
+        'W10_20H2' = 2618
     }
     $editionId = $editionIds[$Version]
     if (-not $editionId) { $editionId = 3262 }
 
-    $profileId  = '606624d44113'
+    $profileId = '606624d44113'
     $instanceId = '560dc9f3-1aa5-4a2f-b63c-9e18f8d0e175'
-    $sessionId  = [guid]::NewGuid().ToString()
+    $sessionId = [guid]::NewGuid().ToString()
     $referer = if ($Version -like 'W10_*') { 'https://www.microsoft.com/software-download/windows10ISO' } else { 'https://www.microsoft.com/software-download/windows11' }
     $timeout = 20
 
@@ -374,7 +378,8 @@ function Get-DirectIsoDownloadUrl {
                 $isoLink = $matches[1]
                 Write-Log "  Extracted ISO URL from raw response." -Level DEBUG
             }
-        } else {
+        }
+        else {
             foreach ($opt in $options) {
                 $uri = $null
                 if ($opt.PSObject.Properties.Name -contains 'Uri') { $uri = $opt.Uri }
@@ -391,11 +396,13 @@ function Get-DirectIsoDownloadUrl {
             $fileName = if ($isoLink -match '/([^/?]+\.iso)') { $matches[1] } else { 'Windows.iso' }
             Write-Log "  Direct ISO URL obtained: $fileName (valid ~24h)" -Level SUCCESS
             return $isoLink
-        } else {
+        }
+        else {
             Write-Log '  No ISO link found in API response.' -Level WARN
             return $null
         }
-    } catch {
+    }
+    catch {
         Write-Log "  Microsoft API failed: $_" -Level WARN
         return $null
     }
@@ -435,7 +442,8 @@ function Get-ReleaseEsd {
         Write-Log "  direct metadata client: Edition ESD: $($result.FileName) ($sizeMB MB)" -Level SUCCESS
         Write-Log "  direct metadata client: URL: $($result.Url.Substring(0, [math]::Min(100, $result.Url.Length)))..." -Level DEBUG
         return $result
-    } catch {
+    }
+    catch {
         Write-Log "  direct metadata client failed: $_" -Level WARN
         return $null
     }
@@ -455,7 +463,7 @@ function Get-EsdDownloadFromCatalog {
         and the caller should fall back to the ISO API or MCT methods.
     #>
     param(
-        [ValidateSet('22H2','23H2','24H2','25H2')]
+        [ValidateSet('22H2', '23H2', '24H2', '25H2')]
         [string]$Version = '25H2',
         [string]$Language = 'en-us',
         [string]$Arch = 'x64',
@@ -491,7 +499,8 @@ function Get-EsdDownloadFromCatalog {
         # Extract XML from CAB using extrac32 (works everywhere, no Git Bash conflict)
         if (Test-Path $extrac32) {
             & $extrac32 /Y /E $cabPath /L $DownloadPath 2>$null | Out-Null
-        } else {
+        }
+        else {
             # Fallback to expand.exe with full path
             $expandExe = Join-Path $env:SystemRoot 'System32\expand.exe'
             & $expandExe $cabPath "-F:products.xml" $DownloadPath 2>$null | Out-Null
@@ -526,7 +535,8 @@ function Get-EsdDownloadFromCatalog {
                         Size     = $size
                         FileName = if ($name) { $name } else { ([System.IO.Path]::GetFileName($url)) }
                     }
-                } elseif (-not $culture -and $name -match $Edition) {
+                }
+                elseif (-not $culture -and $name -match $Edition) {
                     $matches += @{
                         Url      = $url
                         Sha1     = $sha1
@@ -545,7 +555,8 @@ function Get-EsdDownloadFromCatalog {
         $best = $matches | Select-Object -First 1
         Write-Log "  ESD catalog selected: $($best.FileName)" -Level SUCCESS
         return $best
-    } catch {
+    }
+    catch {
         Write-Log "  Catalog download failed: $_" -Level WARN
         return $null
     }

@@ -13,7 +13,8 @@ function Save-DiagnosticBundle {
     $diagDir = Join-Path $DownloadPath "Diagnostics_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
     try {
         New-Item -ItemType Directory -Path $diagDir -Force -ErrorAction Stop | Out-Null
-    } catch {
+    }
+    catch {
         Write-Log "Could not create diagnostics folder: $_" -Level WARN
         return
     }
@@ -27,7 +28,8 @@ function Save-DiagnosticBundle {
             Copy-Item $cbsLog (Join-Path $diagDir 'CBS.log') -Force -ErrorAction SilentlyContinue
             Write-Log '  Captured CBS.log' -Level DEBUG
         }
-    } catch { }
+    }
+    catch { }
 
     # 2. Copy DISM log
     try {
@@ -36,13 +38,14 @@ function Save-DiagnosticBundle {
             Copy-Item $dismLog (Join-Path $diagDir 'DISM.log') -Force -ErrorAction SilentlyContinue
             Write-Log '  Captured DISM.log' -Level DEBUG
         }
-    } catch { }
+    }
+    catch { }
 
     # 3. Copy SetupErr/SetupAct from Panther
     try {
         $pantherDir = "$env:SystemRoot\Panther"
         if (Test-Path $pantherDir) {
-            foreach ($f in @('setupact.log','setuperr.log','setupapi.dev.log')) {
+            foreach ($f in @('setupact.log', 'setuperr.log', 'setupapi.dev.log')) {
                 $src = Join-Path $pantherDir $f
                 if (Test-Path $src) {
                     Copy-Item $src (Join-Path $diagDir $f) -Force -ErrorAction SilentlyContinue
@@ -50,14 +53,16 @@ function Save-DiagnosticBundle {
             }
             Write-Log '  Captured Panther logs' -Level DEBUG
         }
-    } catch { }
+    }
+    catch { }
 
     # 4. DISM component store health check
     try {
         $healthFile = Join-Path $diagDir 'DISM_Health.txt'
         & dism.exe /Online /Cleanup-Image /CheckHealth 2>&1 | Out-File $healthFile -Encoding ascii -ErrorAction SilentlyContinue
         Write-Log '  Captured DISM health check' -Level DEBUG
-    } catch { }
+    }
+    catch { }
 
     # 5. Windows Update log (PS 5.1+ can generate it) -- suppress console spam
     try {
@@ -66,7 +71,8 @@ function Save-DiagnosticBundle {
         $wuProc = Start-Process powershell.exe -ArgumentList "-NoProfile -Command `"Get-WindowsUpdateLog -LogPath '$wuLogFile'`"" `
             -WindowStyle Hidden -PassThru -Wait -ErrorAction SilentlyContinue
         Write-Log '  Captured WindowsUpdate.log' -Level DEBUG
-    } catch { }
+    }
+    catch { }
 
     # 6. Installed updates list
     try {
@@ -76,7 +82,8 @@ function Save-DiagnosticBundle {
             Format-Table -AutoSize |
             Out-File $updatesFile -Encoding ascii -ErrorAction SilentlyContinue
         Write-Log '  Captured installed updates list' -Level DEBUG
-    } catch { }
+    }
+    catch { }
 
     # 7. System info snapshot
     try {
@@ -95,7 +102,8 @@ function Save-DiagnosticBundle {
         )
         $sysInfo | Out-File $sysFile -Encoding ascii -ErrorAction SilentlyContinue
         Write-Log '  Captured system info' -Level DEBUG
-    } catch { }
+    }
+    catch { }
 
     # 8. Error summary
     if ($Script:ErrorLog.Count -gt 0) {
@@ -103,7 +111,8 @@ function Save-DiagnosticBundle {
             $errFile = Join-Path $diagDir 'ErrorSummary.txt'
             $Script:ErrorLog | Out-File $errFile -Encoding ascii -ErrorAction SilentlyContinue
             Write-Log "  Captured $($Script:ErrorLog.Count) error(s)" -Level DEBUG
-        } catch { }
+        }
+        catch { }
     }
 
     # 9. Copy our own log
@@ -111,7 +120,8 @@ function Save-DiagnosticBundle {
         if (Test-Path $LogPath) {
             Copy-Item $LogPath (Join-Path $diagDir 'wfu-tool.log') -Force -ErrorAction SilentlyContinue
         }
-    } catch { }
+    }
+    catch { }
 
     Write-Log "Diagnostic bundle saved to: $diagDir" -Level WARN
     Write-Log "Share this folder when reporting issues." -Level WARN
@@ -141,12 +151,15 @@ function Repair-ComponentStore {
         $dismExit = $dismProc.ExitCode
         if ($dismExit -eq 0) {
             Write-Log '  DISM: Component store is healthy.' -Level SUCCESS
-        } elseif ($dismExit -eq 87) {
+        }
+        elseif ($dismExit -eq 87) {
             Write-Log '  DISM: Unknown option -- skipping (older Windows version).' -Level WARN
-        } else {
+        }
+        else {
             Write-Log "  DISM exited with code $dismExit." -Level WARN
         }
-    } catch {
+    }
+    catch {
         Write-Log "  DISM failed: $_" -Level WARN
     }
 
@@ -161,10 +174,12 @@ function Repair-ComponentStore {
         $sfcExit = $sfcProc.ExitCode
         if ($sfcExit -eq 0) {
             Write-Log '  SFC: No integrity violations found.' -Level SUCCESS
-        } else {
+        }
+        else {
             Write-Log "  SFC exited with code $sfcExit." -Level WARN
         }
-    } catch {
+    }
+    catch {
         Write-Log "  SFC failed: $_" -Level WARN
     }
 
@@ -251,14 +266,16 @@ function Test-DiskSpace {
             }
             & cleanmgr.exe /sagerun:99 2>$null | Out-Null
             Write-Log '  Disk Cleanup completed.' -Level DEBUG
-        } catch { }
+        }
+        catch { }
 
         # Clear Windows temp
         try {
             Remove-Item "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
             Write-Log '  Temp folders cleaned.' -Level DEBUG
-        } catch { }
+        }
+        catch { }
 
         # Clear SoftwareDistribution downloads
         try {
@@ -266,7 +283,8 @@ function Test-DiskSpace {
             Remove-Item "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
             Start-Service wuauserv -ErrorAction SilentlyContinue -WarningAction SilentlyContinue 3>$null
             Write-Log '  SoftwareDistribution\Download cleaned.' -Level DEBUG
-        } catch { }
+        }
+        catch { }
 
         # Re-check
         $drive = Get-PSDrive ($env:SystemDrive[0]) -ErrorAction SilentlyContinue
@@ -280,7 +298,8 @@ function Test-DiskSpace {
 
         Write-Log "Disk space recovered -- $freeGB GB available." -Level SUCCESS
         return $true
-    } catch {
+    }
+    catch {
         Write-Log "Could not check disk space: $_" -Level WARN
         return $true  # Don't block on check failure
     }

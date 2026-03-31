@@ -3,7 +3,7 @@
 function New-LegacyMediaSourceDescriptor {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('CAB','XML','MCTEXE')]
+        [ValidateSet('CAB', 'XML', 'MCTEXE')]
         [string]$Kind,
 
         [Parameter(Mandatory)]
@@ -55,16 +55,16 @@ function Get-LegacyMediaSourceId {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('CAB','XML','MCTEXE')]
+        [ValidateSet('CAB', 'XML', 'MCTEXE')]
         [string]$Kind,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'neutral'
     )
 
     switch ($Kind) {
-        'XML'   { return 'LEGACY_XML' }
-        'CAB'   { return 'LEGACY_CAB' }
+        'XML' { return 'LEGACY_XML' }
+        'CAB' { return 'LEGACY_CAB' }
         'MCTEXE' {
             if ($Architecture -eq 'x86') { return 'LEGACY_MCT_X86' }
             return 'LEGACY_MCT_X64'
@@ -80,10 +80,10 @@ function Get-LegacyMediaSourceHealth {
         [psobject]$Spec,
 
         [Parameter(Mandatory)]
-        [ValidateSet('CAB','XML','MCTEXE')]
+        [ValidateSet('CAB', 'XML', 'MCTEXE')]
         [string]$Kind,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'neutral'
     )
 
@@ -166,17 +166,17 @@ function Get-LegacyMediaManifest {
     $mctGeneric = 'https://download.microsoft.com/download/C/F/9/CF9862F9-3D22-4811-99E7-68CE3327DAE6/MediaCreationTool.exe'
     $mct1507X64 = 'https://download.microsoft.com/download/1/C/8/1C8BAF5C-9B7E-44FB-A90A-F58590B5DF7B/v2.0/MediaCreationToolx64.exe'
     $mct1507X86 = 'https://download.microsoft.com/download/1/C/8/1C8BAF5C-9B7E-44FB-A90A-F58590B5DF7B/v2.0/MediaCreationTool.exe'
-    $mct1703    = 'https://download.microsoft.com/download/1/F/E/1FE453BE-89E0-4B6D-8FF8-35B8FA35EC3F/MediaCreationTool.exe'
-    $mct1709    = 'https://download.microsoft.com/download/A/B/E/ABEE70FE-7DE8-472A-8893-5F69947DE0B1/MediaCreationTool.exe'
-    $mct1803    = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1803.exe'
-    $mct1809    = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1809.exe'
-    $mct1903    = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1903.exe'
-    $mct1909    = 'https://download.microsoft.com/download/c/0/b/c0b2b254-54f1-42de-bfe5-82effe499ee0/MediaCreationTool1909.exe'
-    $mct2004    = 'https://software-download.microsoft.com/download/pr/MediaCreationTool2004.exe'
-    $mct20H2    = 'https://download.microsoft.com/download/4/c/c/4cc6c15c-75a5-4d1b-a3fe-140a5e09c9ff/MediaCreationTool20H2.exe'
-    $mct21H1    = 'https://download.microsoft.com/download/d/5/2/d528a4e0-03f3-452d-a98e-3e479226d166/MediaCreationTool21H1.exe'
-    $mct21H2    = 'https://download.microsoft.com/download/b/0/5/b053c6bc-fc07-4785-a66a-63c5aeb715a9/MediaCreationTool21H2.exe'
-    $mct22H2    = 'https://download.microsoft.com/download/9/e/a/9eac306f-d134-4609-9c58-35d1638c2363/MediaCreationTool22H2.exe'
+    $mct1703 = 'https://download.microsoft.com/download/1/F/E/1FE453BE-89E0-4B6D-8FF8-35B8FA35EC3F/MediaCreationTool.exe'
+    $mct1709 = 'https://download.microsoft.com/download/A/B/E/ABEE70FE-7DE8-472A-8893-5F69947DE0B1/MediaCreationTool.exe'
+    $mct1803 = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1803.exe'
+    $mct1809 = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1809.exe'
+    $mct1903 = 'https://software-download.microsoft.com/download/pr/MediaCreationTool1903.exe'
+    $mct1909 = 'https://download.microsoft.com/download/c/0/b/c0b2b254-54f1-42de-bfe5-82effe499ee0/MediaCreationTool1909.exe'
+    $mct2004 = 'https://software-download.microsoft.com/download/pr/MediaCreationTool2004.exe'
+    $mct20H2 = 'https://download.microsoft.com/download/4/c/c/4cc6c15c-75a5-4d1b-a3fe-140a5e09c9ff/MediaCreationTool20H2.exe'
+    $mct21H1 = 'https://download.microsoft.com/download/d/5/2/d528a4e0-03f3-452d-a98e-3e479226d166/MediaCreationTool21H1.exe'
+    $mct21H2 = 'https://download.microsoft.com/download/b/0/5/b053c6bc-fc07-4785-a66a-63c5aeb715a9/MediaCreationTool21H2.exe'
+    $mct22H2 = 'https://download.microsoft.com/download/9/e/a/9eac306f-d134-4609-9c58-35d1638c2363/MediaCreationTool22H2.exe'
 
     @(
         [pscustomobject]@{
@@ -608,7 +608,7 @@ function Get-LegacyMediaPreferredSources {
         [ValidateNotNullOrEmpty()]
         [string]$Version,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'x64',
 
         [switch]$IncludeDead
@@ -624,7 +624,8 @@ function Get-LegacyMediaPreferredSources {
         if (-not $source) { continue }
         $srcArch = if ($source.PSObject.Properties.Name -contains 'Architecture' -and $source.Architecture) {
             [string]$source.Architecture
-        } else {
+        }
+        else {
             'neutral'
         }
 
@@ -634,8 +635,8 @@ function Get-LegacyMediaPreferredSources {
             }
 
             $priority = switch ($source.Kind) {
-                'CAB'   { 0 }
-                'XML'   { 1 }
+                'CAB' { 0 }
+                'XML' { 1 }
                 'MCTEXE' { if ($arch -eq 'x86') { 1 } else { 2 } }
                 default { 3 }
             }
@@ -676,16 +677,17 @@ function Resolve-LegacyMediaSource {
         [ValidateNotNullOrEmpty()]
         [string]$Version,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'x64',
 
-        [ValidateSet('Preferred','All')]
+        [ValidateSet('Preferred', 'All')]
         [string]$Mode = 'Preferred'
     )
 
     $sources = if ($Mode -eq 'All') {
         @(Get-LegacyMediaSourceDescriptors -Version $Version)
-    } else {
+    }
+    else {
         @(Get-LegacyMediaPreferredSources -Version $Version -Architecture $Architecture | ForEach-Object { $_.Source })
     }
 
@@ -711,7 +713,7 @@ function Get-LegacyMediaDownloadPlan {
         [ValidateNotNullOrEmpty()]
         [string]$Version,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'x64'
     )
 
@@ -750,7 +752,7 @@ function Invoke-LegacyMediaDownload {
         [ValidateNotNullOrEmpty()]
         [string]$TargetDirectory,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'x64',
 
         [switch]$Force
@@ -780,13 +782,13 @@ function Invoke-LegacyMediaDownload {
         $destination = Join-Path $TargetDirectory $fileName
         if ((Test-Path $destination) -and -not $Force) {
             [void]$results.Add([pscustomobject]@{
-                Version    = $source.Version
-                Kind       = $source.Kind
-                SourceUrl  = $source.Url
-                FilePath   = $destination
-                Downloaded = $false
-                Skipped    = $true
-            })
+                    Version    = $source.Version
+                    Kind       = $source.Kind
+                    SourceUrl  = $source.Url
+                    FilePath   = $destination
+                    Downloaded = $false
+                    Skipped    = $true
+                })
             continue
         }
 
@@ -794,36 +796,37 @@ function Invoke-LegacyMediaDownload {
             try {
                 Invoke-WebRequest -Uri $source.Url -OutFile $destination -UseBasicParsing -ErrorAction Stop
                 [void]$results.Add([pscustomobject]@{
-                    Version    = $source.Version
-                    Kind       = $source.Kind
-                    SourceUrl  = $source.Url
-                    FilePath   = $destination
-                    Downloaded = $true
-                    Skipped    = $false
-                })
-            } catch {
+                        Version    = $source.Version
+                        Kind       = $source.Kind
+                        SourceUrl  = $source.Url
+                        FilePath   = $destination
+                        Downloaded = $true
+                        Skipped    = $false
+                    })
+            }
+            catch {
                 [void]$results.Add([pscustomobject]@{
-                    Version    = $source.Version
-                    Kind       = $source.Kind
-                    SourceUrl  = $source.Url
-                    FilePath   = $destination
-                    Downloaded = $false
-                    Skipped    = $false
-                    Error      = [string]$_
-                })
+                        Version    = $source.Version
+                        Kind       = $source.Kind
+                        SourceUrl  = $source.Url
+                        FilePath   = $destination
+                        Downloaded = $false
+                        Skipped    = $false
+                        Error      = [string]$_
+                    })
             }
         }
     }
 
     [pscustomobject]([ordered]@{
-        Version         = $plan.Version
-        DisplayVersion   = $plan.DisplayVersion
-        Build           = $plan.Build
-        OS              = $plan.OS
-        Architecture    = $plan.Architecture
-        TargetDirectory = $TargetDirectory
-        Items           = @($results | ForEach-Object { $_ })
-    })
+            Version         = $plan.Version
+            DisplayVersion  = $plan.DisplayVersion
+            Build           = $plan.Build
+            OS              = $plan.OS
+            Architecture    = $plan.Architecture
+            TargetDirectory = $TargetDirectory
+            Items           = @($results | ForEach-Object { $_ })
+        })
 }
 
 function Stage-LegacyMediaSources {
@@ -841,7 +844,7 @@ function Stage-LegacyMediaSources {
         [ValidateNotNullOrEmpty()]
         [string]$TargetDirectory,
 
-        [ValidateSet('x64','x86','neutral')]
+        [ValidateSet('x64', 'x86', 'neutral')]
         [string]$Architecture = 'x64'
     )
 
@@ -851,13 +854,13 @@ function Stage-LegacyMediaSources {
     }
 
     [pscustomobject]([ordered]@{
-        Version         = $download.Version
-        DisplayVersion  = $download.DisplayVersion
-        Build           = $download.Build
-        OS              = $download.OS
-        Architecture    = $download.Architecture
-        TargetDirectory = $download.TargetDirectory
-        Items           = $download.Items
-        Files           = @($download.Items | Where-Object { $_.FilePath } | ForEach-Object { $_.FilePath })
-    })
+            Version         = $download.Version
+            DisplayVersion  = $download.DisplayVersion
+            Build           = $download.Build
+            OS              = $download.OS
+            Architecture    = $download.Architecture
+            TargetDirectory = $download.TargetDirectory
+            Items           = $download.Items
+            Files           = @($download.Items | Where-Object { $_.FilePath } | ForEach-Object { $_.FilePath })
+        })
 }
