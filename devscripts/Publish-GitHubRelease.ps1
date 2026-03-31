@@ -101,6 +101,7 @@ function Get-WfuGitHubHeaders {
     return @{
         Authorization          = "Bearer $AccessToken"
         Accept                 = 'application/vnd.github+json'
+        'User-Agent'           = 'wfu-tool-release-publisher'
         'X-GitHub-Api-Version' = '2022-11-28'
     }
 }
@@ -259,7 +260,12 @@ function Add-WfuReleaseAsset {
     $headers['Content-Type'] = 'application/octet-stream'
 
     try {
-        Invoke-RestMethod -Method POST -Uri $assetUri -Headers $headers -Body $bytes -ContentType 'application/octet-stream' -ErrorAction Stop
+        Invoke-WebRequest -Method POST -Uri $assetUri -Headers $headers -InFile $Path -ContentType 'application/octet-stream' -UseBasicParsing -ErrorAction Stop | Out-Null
+        return [pscustomobject]@{
+            Status = 'Uploaded'
+            Path   = $Path
+            Reason = $null
+        }
     }
     catch {
         if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 422) {

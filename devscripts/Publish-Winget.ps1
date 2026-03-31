@@ -11,9 +11,9 @@
 param(
     [string]$RepositoryRoot = (Split-Path $PSScriptRoot -Parent),
     [string]$Version,
-    [string]$PackageIdentifier = 'wfu-tool',
+    [string]$PackageIdentifier = 'supermarsx.wfu-tool',
     [string]$PackageName = 'wfu-tool',
-    [string]$Publisher = 'wfu-tool',
+    [string]$Publisher = 'supermarsx',
     [string]$ReleaseUrl,
     [string]$InstallerUrl,
     [string]$InstallerSha256,
@@ -37,7 +37,10 @@ function Get-WfuSourceUrl {
     param([string]$ExplicitUrl, [string]$Release)
 
     if (-not [string]::IsNullOrWhiteSpace($ExplicitUrl)) {
-        return $ExplicitUrl.Trim()
+        $trimmed = $ExplicitUrl.Trim()
+        if ($trimmed -match '^https?://') {
+            return $trimmed
+        }
     }
 
     if ([string]::IsNullOrWhiteSpace($Release)) {
@@ -75,6 +78,31 @@ function Resolve-WfuPackageArtifact {
         Select-Object -First 1 -ExpandProperty FullName
 }
 
+function ConvertTo-WfuYamlScalar {
+    param([AllowNull()]$Value)
+
+    if ($null -eq $Value) { return "''" }
+    $text = [string]$Value
+    $escaped = $text -replace "'", "''"
+    return "'$escaped'"
+}
+
+function Get-WfuWingetConfig {
+    param([string]$Root)
+
+    $configPath = Join-Path $Root 'packaging\winget\winget-config.psd1'
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        return @{}
+    }
+
+    $config = Import-PowerShellDataFile -LiteralPath $configPath
+    if ($config -is [hashtable]) {
+        return $config
+    }
+
+    return @{}
+}
+
 if (-not (Test-WfuTruthy -Value $env:ENABLE_WINGET)) {
     $result = [pscustomobject]@{
         Status     = 'Skipped'
@@ -105,6 +133,31 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
         $Version = $versionInfo.Version
     }
 }
+
+$wingetConfig = Get-WfuWingetConfig -Root $RepositoryRoot
+if ($wingetConfig.PackageIdentifier) { $PackageIdentifier = [string]$wingetConfig.PackageIdentifier }
+if ($wingetConfig.PackageName) { $PackageName = [string]$wingetConfig.PackageName }
+if ($wingetConfig.Publisher) { $Publisher = [string]$wingetConfig.Publisher }
+
+$publisherUrl = if ($wingetConfig.PublisherUrl) { [string]$wingetConfig.PublisherUrl } else { $null }
+$publisherSupportUrl = if ($wingetConfig.PublisherSupportUrl) { [string]$wingetConfig.PublisherSupportUrl } else { $null }
+$packageUrl = if ($wingetConfig.PackageUrl) { [string]$wingetConfig.PackageUrl } else { $null }
+$license = if ($wingetConfig.License) { [string]$wingetConfig.License } else { 'MIT' }
+$licenseUrl = if ($wingetConfig.LicenseUrl) { [string]$wingetConfig.LicenseUrl } else { $null }
+$shortDescription = if ($wingetConfig.ShortDescription) { [string]$wingetConfig.ShortDescription } else { 'Windows feature upgrade helper' }
+$description = if ($wingetConfig.Description) { [string]$wingetConfig.Description } else { $shortDescription }
+$moniker = if ($wingetConfig.Moniker) { [string]$wingetConfig.Moniker } else { $null }
+$manifestVersion = if ($wingetConfig.ManifestVersion) { [string]$wingetConfig.ManifestVersion } else { '1.6.0' }
+$installerType = if ($wingetConfig.InstallerType) { [string]$wingetConfig.InstallerType } else { 'zip' }
+$nestedInstallerType = if ($wingetConfig.NestedInstallerType) { [string]$wingetConfig.NestedInstallerType } else { $null }
+$releaseNotesUrl = if ($wingetConfig.ReleaseNotesUrl) { [string]$wingetConfig.ReleaseNotesUrl } else { $null }
+$tags = @()
+foreach ($tag in @($wingetConfig.Tags)) {
+    if (-not [string]::IsNullOrWhiteSpace([string]$tag)) {
+        $tags += [string]$tag
+    }
+}
+$nestedInstallerFiles = @($wingetConfig.NestedInstallerFiles)
 
 if ([string]::IsNullOrWhiteSpace($InstallerUrl) -and -not [string]::IsNullOrWhiteSpace($ArtifactRoot)) {
     $InstallerUrl = Resolve-WfuPackageArtifact -Root $ArtifactRoot -ReleaseVersion $Version
@@ -139,51 +192,70 @@ $installerManifest = Join-Path $installerManifestDir "$PackageIdentifier.install
 $versionManifest = Join-Path $manifestRoot 'version.yaml'
 $localeManifest = Join-Path $localeManifestDir "$PackageIdentifier.locale.en-US.yaml"
 
-$installerContent = @"
-PackageIdentifier: $PackageIdentifier
-PackageVersion: $Version
-PackageLocale: en-US
-Publisher: $Publisher
-PackageName: $PackageName
-License: MIT
-ShortDescription: Windows feature upgrade helper
-InstallerType: exe
-InstallModes:
-  - interactive
-  - silent
-InstallerSwitches:
-  Silent: /quiet
-  SilentWithProgress: /quiet
-Installers:
-  - Architecture: x64
-    InstallerUrl: $ReleaseUrl
-    InstallerSha256: $(if ($InstallerSha256) { $InstallerSha256 } else { '0000000000000000000000000000000000000000000000000000000000000000' })
-    Scope: machine
-"@
+$installerYaml = New-Object System.Collections.Generic.List[string]
+$installerYaml.Add("PackageIdentifier: $PackageIdentifier") | Out-Null
+$installerYaml.Add("PackageVersion: $Version") | Out-Null
+$installerYaml.Add('Platform:') | Out-Null
+$installerYaml.Add('  - Windows.Desktop') | Out-Null
+$installerYaml.Add("InstallerType: $installerType") | Out-Null
+if ($nestedInstallerType) {
+    $installerYaml.Add("NestedInstallerType: $nestedInstallerType") | Out-Null
+}
+$installerYaml.Add('InstallModes:') | Out-Null
+$installerYaml.Add('  - interactive') | Out-Null
+$installerYaml.Add('Installers:') | Out-Null
+$installerYaml.Add('  - Architecture: x64') | Out-Null
+$installerYaml.Add("    InstallerUrl: $ReleaseUrl") | Out-Null
+$installerYaml.Add("    InstallerSha256: $(if ($InstallerSha256) { $InstallerSha256.ToUpperInvariant() } else { '0000000000000000000000000000000000000000000000000000000000000000' })") | Out-Null
+$installerYaml.Add('    Scope: machine') | Out-Null
+foreach ($nested in $nestedInstallerFiles) {
+    if (-not $nested) { continue }
+    $relativeFilePath = if ($nested.RelativeFilePath) { [string]$nested.RelativeFilePath } else { $null }
+    if (-not $relativeFilePath) { continue }
+    $installerYaml.Add('    NestedInstallerFiles:') | Out-Null
+    $installerYaml.Add("      - RelativeFilePath: $relativeFilePath") | Out-Null
+    if ($nested.PortableCommandAlias) {
+        $installerYaml.Add("        PortableCommandAlias: $($nested.PortableCommandAlias)") | Out-Null
+    }
+    break
+}
+$installerYaml.Add('ManifestType: installer') | Out-Null
+$installerYaml.Add("ManifestVersion: $manifestVersion") | Out-Null
 
-$versionContent = @"
-PackageIdentifier: $PackageIdentifier
-PackageVersion: $Version
-DefaultLocale: en-US
-ManifestType: version
-ManifestVersion: 1.6.0
-"@
+$versionYaml = @(
+    "PackageIdentifier: $PackageIdentifier"
+    "PackageVersion: $Version"
+    'DefaultLocale: en-US'
+    'ManifestType: version'
+    "ManifestVersion: $manifestVersion"
+)
 
-$localeContent = @"
-PackageIdentifier: $PackageIdentifier
-PackageVersion: $Version
-PackageLocale: en-US
-Publisher: $Publisher
-PackageName: $PackageName
-ShortDescription: Windows feature upgrade helper
-License: MIT
-ManifestType: defaultLocale
-ManifestVersion: 1.6.0
-"@
-
-Set-Content -LiteralPath $installerManifest -Value $installerContent -Encoding UTF8
-Set-Content -LiteralPath $versionManifest -Value $versionContent -Encoding UTF8
-Set-Content -LiteralPath $localeManifest -Value $localeContent -Encoding UTF8
+$localeYaml = New-Object System.Collections.Generic.List[string]
+$localeYaml.Add("PackageIdentifier: $PackageIdentifier") | Out-Null
+$localeYaml.Add("PackageVersion: $Version") | Out-Null
+$localeYaml.Add('PackageLocale: en-US') | Out-Null
+$localeYaml.Add("Publisher: $(ConvertTo-WfuYamlScalar $Publisher)") | Out-Null
+$localeYaml.Add("PackageName: $(ConvertTo-WfuYamlScalar $PackageName)") | Out-Null
+$localeYaml.Add("ShortDescription: $(ConvertTo-WfuYamlScalar $shortDescription)") | Out-Null
+$localeYaml.Add("Description: $(ConvertTo-WfuYamlScalar $description)") | Out-Null
+$localeYaml.Add("License: $(ConvertTo-WfuYamlScalar $license)") | Out-Null
+if ($publisherUrl) { $localeYaml.Add("PublisherUrl: $publisherUrl") | Out-Null }
+if ($publisherSupportUrl) { $localeYaml.Add("PublisherSupportUrl: $publisherSupportUrl") | Out-Null }
+if ($packageUrl) { $localeYaml.Add("PackageUrl: $packageUrl") | Out-Null }
+if ($licenseUrl) { $localeYaml.Add("LicenseUrl: $licenseUrl") | Out-Null }
+if ($moniker) { $localeYaml.Add("Moniker: $moniker") | Out-Null }
+if ($releaseNotesUrl) { $localeYaml.Add("ReleaseNotesUrl: $releaseNotesUrl") | Out-Null }
+if ($tags.Count -gt 0) {
+    $localeYaml.Add('Tags:') | Out-Null
+    foreach ($tag in $tags) {
+        $localeYaml.Add("  - $tag") | Out-Null
+    }
+}
+$localeYaml.Add('ManifestType: defaultLocale') | Out-Null
+$localeYaml.Add("ManifestVersion: $manifestVersion") | Out-Null
+Set-Content -LiteralPath $installerManifest -Value $installerYaml -Encoding UTF8
+Set-Content -LiteralPath $versionManifest -Value $versionYaml -Encoding UTF8
+Set-Content -LiteralPath $localeManifest -Value $localeYaml -Encoding UTF8
 
 $result = [pscustomobject]@{
     Status     = 'Scaffolded'
