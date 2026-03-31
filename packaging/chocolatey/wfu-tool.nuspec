@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>wfu-tool</id>
+    <version>$version$</version>
+    <title>wfu-tool</title>
+    <authors>wfu-tool</authors>
+    <owners>wfu-tool</owners>
+    <projectUrl>https://github.com/wfu-tool/wfu-tool</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Windows feature upgrade helper</description>
+    <tags>windows upgrade installer</tags>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
+
