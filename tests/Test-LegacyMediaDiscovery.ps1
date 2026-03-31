@@ -36,7 +36,8 @@ function Get-LegacyEntry {
     $collection = @()
     if ($Manifest.PSObject.Properties.Name -contains 'Versions') {
         $collection = @($Manifest.Versions)
-    } else {
+    }
+    else {
         $collection = @($Manifest)
     }
 
@@ -63,7 +64,8 @@ if ($legacyManifestCommand -and -not $manifest) {
 foreach ($version in $expectedVersions) {
     if ($legacySpecCommand) {
         $entry = & $legacySpecCommand -Version $version
-    } else {
+    }
+    else {
         $entry = Get-LegacyEntry -Manifest $manifest -Version $version
     }
     if (($entry -is [string]) -and $legacySpecCommand) {

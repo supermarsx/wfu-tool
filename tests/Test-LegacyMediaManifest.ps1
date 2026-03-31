@@ -20,7 +20,8 @@ function Get-LegacyManifestEntries {
     $result = $null
     try {
         $result = & $Cmd.Name
-    } catch {
+    }
+    catch {
         try { $result = & $Cmd.Name -Version 'W10_1507' } catch {}
     }
 
@@ -30,8 +31,8 @@ function Get-LegacyManifestEntries {
 
     if ($result -is [System.Collections.IDictionary]) {
         return @($result.GetEnumerator() | ForEach-Object {
-            [pscustomobject]@{ Version = $_.Key; Value = $_.Value }
-        })
+                [pscustomobject]@{ Version = $_.Key; Value = $_.Value }
+            })
     }
 
     foreach ($propName in @('Releases', 'Versions', 'Items', 'Manifest')) {

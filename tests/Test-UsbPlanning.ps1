@@ -53,12 +53,12 @@ $commonArgs = @{}
 $paramNames = @($usbCmd.Parameters.Keys)
 if ($paramNames -contains 'Options') {
     $commonArgs['Options'] = [ordered]@{
-        CreateUsb = $true
-        KeepIso = $true
-        UsbDiskNumber = 3
-        UsbDiskId = 'USB-DISK-123'
+        CreateUsb         = $true
+        KeepIso           = $true
+        UsbDiskNumber     = 3
+        UsbDiskId         = 'USB-DISK-123'
         UsbPartitionStyle = 'gpt'
-        Mode = if ((Get-Command Get-WfuNormalizedMode -ErrorAction SilentlyContinue) -and (Get-WfuNormalizedMode -Mode 'UsbFromIso') -eq 'UsbFromIso') { 'UsbFromIso' } else { 'CreateUsb' }
+        Mode              = if ((Get-Command Get-WfuNormalizedMode -ErrorAction SilentlyContinue) -and (Get-WfuNormalizedMode -Mode 'UsbFromIso') -eq 'UsbFromIso') { 'UsbFromIso' } else { 'CreateUsb' }
     }
 }
 if ($paramNames -contains 'UsbDiskNumber') { $commonArgs['UsbDiskNumber'] = 3 }
@@ -109,9 +109,11 @@ if ($usbCmd.CommandType -eq 'Function' -and $usbCmd.Parameters.Count -gt 0) {
         if ($resultText) {
             Assert-True ($resultText -match 'USB|Disk|Iso|WIM|ESD|GPT|MBR') "USB planning: result looks like a USB plan ($commandName)"
         }
-    } catch {
+    }
+    catch {
         Assert-True $false "USB planning: helper invocation failed ($commandName) -- $_"
     }
-} else {
+}
+else {
     Skip-Test 'USB planning helpers' "Command $commandName is not invokable with the current test harness"
 }

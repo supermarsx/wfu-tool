@@ -32,17 +32,20 @@ if ($versions.Count -gt 0) {
             Assert-True ($legacy.Build -gt 10000) "RemoteVersions[$($legacy.Version)]: Build $($legacy.Build) > 10000"
             if ($legacy.PSObject.Properties.Name -contains 'SourceFamily') {
                 Assert-NotNull $legacy.SourceFamily "RemoteVersions[$($legacy.Version)]: SourceFamily is identified"
-            } else {
+            }
+            else {
                 Skip-Test "RemoteVersions[$($legacy.Version)]: SourceFamily" 'SourceFamily is not surfaced by the current discovery shape'
             }
             if ($legacy.PSObject.Properties.Name -contains 'DiscoverySource') {
                 Assert-True ($legacy.DiscoverySource -match 'Pinned|Manifest|Legacy') "RemoteVersions[$($legacy.Version)]: Discovery source is pinned legacy data"
-            } else {
+            }
+            else {
                 Skip-Test "RemoteVersions[$($legacy.Version)]: DiscoverySource" 'DiscoverySource is not surfaced by the current discovery shape'
             }
         }
     }
-} else {
+}
+else {
     Skip-Test 'RemoteVersions: Discovery' 'No internet or direct metadata unavailable'
 }
 
@@ -55,6 +58,7 @@ if ($isoUrl) {
     Assert-Match '^https://' $isoUrl 'DirectIsoUrl: URL is HTTPS'
     Assert-Match 'microsoft\.com|prss\.microsoft' $isoUrl 'DirectIsoUrl: URL is from Microsoft CDN'
     Write-Host "    (Got URL: $($isoUrl.Substring(0, [math]::Min(80, $isoUrl.Length)))...)" -ForegroundColor DarkGray
-} else {
+}
+else {
     Skip-Test 'DirectIsoUrl: URL retrieval' 'Sentinel blocked or network issue (known intermittent)'
 }

@@ -22,18 +22,20 @@ if ($isAdmin) {
         Assert-True ($readBack -is [array] -or $readBack -is [string[]]) 'Bypass-HwReqChk: REG_MULTI_SZ writable'
         Assert-True ($readBack -contains 'SQ_TpmVersion=2') 'Bypass-HwReqChk: Contains TPM spoof'
         Assert-True ($readBack -contains 'SQ_SecureBootCapable=TRUE') 'Bypass-HwReqChk: Contains SecureBoot spoof'
-    } catch {
+    }
+    catch {
         Assert-True $false "Bypass-HwReqChk: REG_MULTI_SZ write failed: $_"
     }
     Remove-Item $testKey -Recurse -Force -ErrorAction SilentlyContinue
-} else {
+}
+else {
     Skip-Test 'Bypass-HwReqChk: REG_MULTI_SZ' 'Requires admin'
 }
 
 # =============================================================
 # Test: LabConfig bypass keys format
 # =============================================================
-$labBypasses = @('BypassTPMCheck','BypassSecureBootCheck','BypassRAMCheck','BypassStorageCheck','BypassCPUCheck')
+$labBypasses = @('BypassTPMCheck', 'BypassSecureBootCheck', 'BypassRAMCheck', 'BypassStorageCheck', 'BypassCPUCheck')
 foreach ($bypass in $labBypasses) {
     Assert-True ($bypass -match '^Bypass\w+Check$') "Bypass-LabConfig: $bypass matches expected pattern"
 }
@@ -61,7 +63,8 @@ foreach ($svc in $telemetryServices) {
     $service = Get-Service $svc -ErrorAction SilentlyContinue
     if ($service) {
         Assert-True $true "Bypass-Telemetry: Service '$svc' exists on this system"
-    } else {
+    }
+    else {
         # Service might not exist on all systems
         Assert-True $true "Bypass-Telemetry: Service '$svc' not found (may be removed already)"
     }
@@ -103,11 +106,13 @@ if ($isAdmin) {
         Assert-True ($content -match 'DisableWUfBSafeguards') 'Bypass-IFEO: Hook disables WUfB safeguards'
         Assert-True ($content -match 'CompatMarkers') 'Bypass-IFEO: Hook deletes CompatMarkers'
         Assert-True ($content -match 'IgnoreWarning') 'Bypass-IFEO: Hook passes /Compat IgnoreWarning'
-    } else {
+    }
+    else {
         Assert-True $false 'Bypass-IFEO: Hook script not created'
     }
     Install-SetupHostBypassHook -Remove
-} else {
+}
+else {
     Skip-Test 'Bypass-IFEO: Hook content' 'Requires admin'
 }
 
@@ -121,6 +126,7 @@ if ($isAdmin) {
     # Verify PowerShell process TLS setting
     $proto = [Net.ServicePointManager]::SecurityProtocol
     Assert-True ($proto -band [Net.SecurityProtocolType]::Tls12) 'Bypass-TLS: PS SecurityProtocol includes TLS 1.2'
-} else {
+}
+else {
     Skip-Test 'Bypass-TLS: Configuration' 'Requires admin'
 }

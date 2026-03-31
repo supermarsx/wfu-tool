@@ -15,7 +15,8 @@ Assert-Match '^\d+\.\d+$' $ver.FullBuild 'Version: FullBuild matches N.N format'
 if ($ver.Build -ge 22000) {
     Assert-Equal 'Windows 11' $ver.OS 'Version: Build >= 22000 is Windows 11'
     Assert-True ($ver.VersionKey -notlike 'W10_*') 'Version: Win11 key has no W10_ prefix'
-} else {
+}
+else {
     Assert-Equal 'Windows 10' $ver.OS 'Version: Build < 22000 is Windows 10'
     Assert-True ($ver.VersionKey -like 'W10_*') 'Version: Win10 key has W10_ prefix'
 }

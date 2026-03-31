@@ -6,7 +6,8 @@ if (-not $isAdmin) {
     Skip-Test 'Resume: Set resume state' 'Requires admin privileges'
     Skip-Test 'Resume: Registry state saved' 'Requires admin privileges'
     Skip-Test 'Resume: Clear resume state' 'Requires admin privileges'
-} else {
+}
+else {
     $regKey = 'HKLM:\SOFTWARE\wfu-tool'
     $taskName = 'wfu-tool-resume'
 

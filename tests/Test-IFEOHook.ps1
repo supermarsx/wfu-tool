@@ -12,7 +12,8 @@ if (-not $isAdmin) {
     Skip-Test 'IFEO: Registry entries set' 'Requires admin privileges'
     Skip-Test 'IFEO: Remove hook' 'Requires admin privileges'
     Skip-Test 'IFEO: Cleanup complete' 'Requires admin privileges'
-} else {
+}
+else {
     # Clean any leftover from previous runs
     Install-SetupHostBypassHook -Remove
 

@@ -18,13 +18,14 @@ function Invoke-LegacyEnumeration {
     param($Cmd)
 
     foreach ($args in @(
-        @(),
-        @('-IncludeLegacy'),
-        @('-LegacyOnly')
-    )) {
+            @(),
+            @('-IncludeLegacy'),
+            @('-LegacyOnly')
+        )) {
         try {
             return & $Cmd.Name @args
-        } catch {
+        }
+        catch {
             continue
         }
     }

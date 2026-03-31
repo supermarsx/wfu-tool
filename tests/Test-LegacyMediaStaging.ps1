@@ -59,7 +59,8 @@ try {
         Assert-True ($stagedFiles.Count -ge 1) 'Legacy staging: staged file list populated'
         if ($stagedFiles -contains 'Products09232015_2.xml') {
             Assert-True $true 'Legacy staging: XML catalog staged when selected'
-        } else {
+        }
+        else {
             Assert-True ($stage.Items[0].Kind -eq 'MCTEXE') 'Legacy staging: live MCT source staged when XML catalog is dead'
         }
     }
@@ -76,7 +77,8 @@ try {
         $skippedItems = @($stageAgain.Items | Where-Object { $_.Skipped })
         Assert-True ($skippedItems.Count -ge 1) 'Legacy staging: second pass marks items skipped'
     }
-} finally {
+}
+finally {
     Remove-Item function:Invoke-WebRequest -Force -ErrorAction SilentlyContinue
     Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

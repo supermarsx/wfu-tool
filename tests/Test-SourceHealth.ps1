@@ -20,30 +20,30 @@ $healthy = New-WfuSourceState -SourceId 'WU_DIRECT' -Health 'healthy'
 Assert-True $healthy.AutoEligible 'SourceHealth: healthy source is auto-eligible'
 
 $healthMap = @{
-    WU_DIRECT = 'healthy'
-    FIDO = 'degraded'
-    MCT = 'dead'
+    WU_DIRECT  = 'healthy'
+    FIDO       = 'degraded'
+    MCT        = 'dead'
     LEGACY_CAB = 'healthy'
 }
 
-$ordered = Get-WfuOrderedSourceIds -DefaultOrder @('MCT','LEGACY_CAB','WU_DIRECT','FIDO') -HealthMap $healthMap
+$ordered = Get-WfuOrderedSourceIds -DefaultOrder @('MCT', 'LEGACY_CAB', 'WU_DIRECT', 'FIDO') -HealthMap $healthMap
 Assert-True (-not ($ordered -contains 'MCT')) 'SourceHealth: dead sources skipped from auto order'
 Assert-Equal 'LEGACY_CAB' $ordered[0] 'SourceHealth: healthy sources keep order'
 Assert-True ($ordered -contains 'WU_DIRECT') 'SourceHealth: healthy source retained'
 
-$preferred = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT','LEGACY_CAB','FIDO') -PreferredSource 'FIDO' -HealthMap $healthMap
+$preferred = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT', 'LEGACY_CAB', 'FIDO') -PreferredSource 'FIDO' -HealthMap $healthMap
 Assert-Equal 'FIDO' $preferred[0] 'SourceHealth: preferred source moved to front'
 
-$forced = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT','LEGACY_CAB','FIDO') -ForceSource 'MCT' -HealthMap $healthMap
+$forced = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT', 'LEGACY_CAB', 'FIDO') -ForceSource 'MCT' -HealthMap $healthMap
 Assert-Equal 1 @($forced).Count 'SourceHealth: force source collapses to single choice'
 Assert-Equal 'MCT' @($forced)[0] 'SourceHealth: force source wins over health'
 
-$deadPreferred = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT','LEGACY_CAB') -PreferredSource 'MCT' -HealthMap $healthMap -AllowDeadSources
+$deadPreferred = Get-WfuOrderedSourceIds -DefaultOrder @('WU_DIRECT', 'LEGACY_CAB') -PreferredSource 'MCT' -HealthMap $healthMap -AllowDeadSources
 Assert-Equal 'MCT' $deadPreferred[0] 'SourceHealth: dead preferred source can be explicitly selected'
 
 $health = Get-WfuSourceHealth -SourceId 'LEGACY_CAB' -HealthMap $healthMap
 Assert-Equal 'healthy' $health 'SourceHealth: source health lookup returns configured state'
 
-$families = Get-WfuTargetFamilies -AvailableTargets @('W10_1507','W10_22H2','21H2','23H2','24H2')
+$families = Get-WfuTargetFamilies -AvailableTargets @('W10_1507', 'W10_22H2', '21H2', '23H2', '24H2')
 Assert-Equal 2 $families['Windows 10'].Count 'SourceHealth: Windows 10 family contains legacy targets'
 Assert-Equal 3 $families['Windows 11'].Count 'SourceHealth: Windows 11 family contains modern targets'

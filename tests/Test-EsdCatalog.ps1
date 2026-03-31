@@ -20,6 +20,7 @@ if ($esd23) {
     Assert-Match '^[0-9a-f]{40}$' $esd23.Sha1 'EsdCatalog: 23H2 SHA1 is 40 hex chars'
     Assert-NotNull $esd23.FileName 'EsdCatalog: 23H2 has FileName'
     Assert-Match 'en-us' $esd23.FileName 'EsdCatalog: 23H2 FileName contains en-us'
-} else {
+}
+else {
     Skip-Test 'EsdCatalog: 23H2 details' 'No internet or catalog download failed'
 }

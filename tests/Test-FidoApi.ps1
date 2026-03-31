@@ -11,7 +11,8 @@ try {
     $resp = Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 `
         "https://vlscppe.microsoft.com/tags?org_id=y6jn8c31&session_id=$sessionId" -ErrorAction Stop
     Assert-True ($resp.StatusCode -eq 200) 'Fido-vlscppe: Session whitelist returns 200'
-} catch {
+}
+catch {
     Skip-Test 'Fido-vlscppe: Session whitelist' "Network error: $_"
 }
 
@@ -36,7 +37,8 @@ try {
     $replyUrl = "https://ov-df.microsoft.com/?session_id=$sessionId&CustomerId=$instanceId&PageId=si&w=$w&mdt=$epoch&rticks=$rticks"
     $null = Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 $replyUrl -ErrorAction SilentlyContinue
     Assert-True $true 'Fido-ovdf: Reply posted without error'
-} catch {
+}
+catch {
     Skip-Test 'Fido-ovdf: Handshake' "Error: $_"
 }
 
@@ -55,7 +57,8 @@ try {
     Assert-NotNull $engIntl.Id 'Fido-SKU: English International has ID'
     Assert-NotNull $engIntl.FriendlyFileNames 'Fido-SKU: Has FriendlyFileNames'
     Assert-Match 'Win11.*\.iso' ($engIntl.FriendlyFileNames -join ',') 'Fido-SKU: Filename matches Win11*.iso'
-} catch {
+}
+catch {
     Skip-Test 'Fido-SKU: Retrieval' "Error: $_"
 }
 
@@ -64,7 +67,7 @@ if ($engIntl) {
     try {
         $dlUrl = "https://www.microsoft.com/software-download-connector/api/GetProductDownloadLinksBySku?profile=$profileId&productEditionId=undefined&SKU=$($engIntl.Id)&friendlyFileName=undefined&Locale=en-US&sessionID=$sessionId"
         $dlContent = (Invoke-WebRequest -Headers @{ 'Referer' = 'https://www.microsoft.com/software-download/windows11' } `
-            -UseBasicParsing -TimeoutSec 15 $dlUrl -ErrorAction Stop).Content
+                -UseBasicParsing -TimeoutSec 15 $dlUrl -ErrorAction Stop).Content
         $dlResponse = $dlContent | ConvertFrom-Json
 
         $hasErrors = $dlResponse.PSObject.Properties.Name -contains 'Errors'
@@ -78,15 +81,18 @@ if ($engIntl) {
                 Assert-Match '\.iso' $isoUrl 'Fido-Download: URL contains .iso'
                 Assert-Match 'microsoft\.com|prss\.microsoft' $isoUrl 'Fido-Download: URL is Microsoft domain'
             }
-        } elseif ($hasErrors) {
+        }
+        elseif ($hasErrors) {
             $errKey = ($dlResponse.Errors | Select-Object -First 1).Key
             Skip-Test 'Fido-Download: ISO URL' "Sentinel blocked: $errKey (known issue on some networks)"
-        } else {
+        }
+        else {
             # Unknown response format -- log for debugging
             $props = $dlResponse.PSObject.Properties.Name -join ', '
             Skip-Test 'Fido-Download: ISO URL' "Unknown response format: $props"
         }
-    } catch {
+    }
+    catch {
         Skip-Test 'Fido-Download: ISO URL' "Error: $_"
     }
 }

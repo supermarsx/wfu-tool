@@ -27,7 +27,7 @@ $allPreferred1507 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Archi
 Assert-True ($preferred1507.Count -ge 1) 'Legacy sources: W10_1507 x64 has at least one auto-eligible preferred source'
 Assert-True ($allPreferred1507.Count -ge 2) 'Legacy sources: W10_1507 x64 exposes dead and live sources when requested'
 if ($allPreferred1507.Count -ge 2) {
-    $deadCatalog1507 = @($allPreferred1507 | Where-Object { $_.Health -eq 'dead' -and $_.Kind -in @('XML','CAB') })
+    $deadCatalog1507 = @($allPreferred1507 | Where-Object { $_.Health -eq 'dead' -and $_.Kind -in @('XML', 'CAB') })
     Assert-True ($deadCatalog1507.Count -ge 1) 'Legacy sources: W10_1507 x64 keeps dead catalog sources selectable'
 }
 if ($preferred1507.Count -ge 1) {
@@ -52,7 +52,7 @@ $allPreferred1507X86 = @(Get-LegacyMediaPreferredSources -Version 'W10_1507' -Ar
 Assert-True ($preferred1507X86.Count -ge 1) 'Legacy sources: W10_1507 x86 has at least one auto-eligible preferred source'
 Assert-True ($allPreferred1507X86.Count -ge 2) 'Legacy sources: W10_1507 x86 exposes dead and live sources when requested'
 if ($preferred1507X86.Count -ge 1) {
-    Assert-True ($preferred1507X86[0].Kind -in @('MCTEXE','XML')) 'Legacy sources: W10_1507 x86 selects a usable first source'
+    Assert-True ($preferred1507X86[0].Kind -in @('MCTEXE', 'XML')) 'Legacy sources: W10_1507 x86 selects a usable first source'
     Assert-True ($preferred1507X86[0].Health -ne 'dead') 'Legacy sources: W10_1507 x86 auto ordering excludes dead sources'
     $x86MctSources = @($allPreferred1507X86 | Where-Object { $_.Kind -eq 'MCTEXE' -and $_.Architecture -eq 'x86' })
     Assert-True ($x86MctSources.Count -ge 1) 'Legacy sources: W10_1507 x86 exposes an x86 MCT source when requested'

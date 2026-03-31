@@ -15,22 +15,22 @@ New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
 
 $checkpointPath = Join-Path $tempRoot 'session.checkpoint.json'
 $options = [ordered]@{
-    Mode = if ((Get-Command Get-WfuNormalizedMode -ErrorAction SilentlyContinue) -and (Get-WfuNormalizedMode -Mode 'AutomatedUpgrade') -eq 'AutomatedUpgrade') { 'AutomatedUpgrade' } else { 'Headless' }
-    TargetVersion = '22H2'
-    DownloadPath = $tempRoot
-    CheckpointPath = $checkpointPath
-    SessionId = 'abc-123'
-    CreateUsb = $true
-    UsbDiskNumber = 3
-    UsbDiskId = 'USB-DISK-123'
-    KeepIso = $true
+    Mode              = if ((Get-Command Get-WfuNormalizedMode -ErrorAction SilentlyContinue) -and (Get-WfuNormalizedMode -Mode 'AutomatedUpgrade') -eq 'AutomatedUpgrade') { 'AutomatedUpgrade' } else { 'Headless' }
+    TargetVersion     = '22H2'
+    DownloadPath      = $tempRoot
+    CheckpointPath    = $checkpointPath
+    SessionId         = 'abc-123'
+    CreateUsb         = $true
+    UsbDiskNumber     = 3
+    UsbDiskId         = 'USB-DISK-123'
+    KeepIso           = $true
     UsbPartitionStyle = 'gpt'
-    PreferredSource = 'WU_DIRECT'
-    ForceSource = 'LEGACY_CAB'
-    AllowDeadSources = $true
-    SourceHealth = [ordered]@{
-        WU_DIRECT = 'healthy'
-        MCT = 'dead'
+    PreferredSource   = 'WU_DIRECT'
+    ForceSource       = 'LEGACY_CAB'
+    AllowDeadSources  = $true
+    SourceHealth      = [ordered]@{
+        WU_DIRECT  = 'healthy'
+        MCT        = 'dead'
         LEGACY_CAB = 'degraded'
     }
 }
@@ -39,9 +39,9 @@ $saved = Save-WfuCheckpoint -Path $checkpointPath -Options $options `
     -CurrentVersion 'W10_21H2' -TargetVersion '22H2' -CurrentStep 'media staged' `
     -NextStep 'ISO ready' -SelectedSource 'LEGACY_CAB' -Stage 'media-staged' `
     -Artifacts @{
-        IsoPath = Join-Path $tempRoot '22H2.iso'
-        Workspace = Join-Path $tempRoot 'workspace'
-    } -PassThru
+    IsoPath   = Join-Path $tempRoot '22H2.iso'
+    Workspace = Join-Path $tempRoot 'workspace'
+} -PassThru
 
 Assert-True (Test-Path $checkpointPath) 'Checkpoint: file written'
 Assert-Equal 'media-staged' $saved.Stage 'Checkpoint: saved stage recorded'

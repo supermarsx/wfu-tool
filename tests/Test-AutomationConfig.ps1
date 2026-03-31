@@ -99,11 +99,11 @@ Assert-Equal '22H2' $merged.TargetVersion 'Automation: merge preserves override 
 Assert-Equal 'LEGACY_CAB' $merged.PreferredSource 'Automation: merge preserves override preferred source'
 
 $resolved = New-WfuResolvedOptions -ConfigPath $iniPath -CliOptions @{
-    Mode = 'Interactive'
-    TargetVersion = '23H2'
+    Mode            = 'Interactive'
+    TargetVersion   = '23H2'
     PreferredSource = 'WU_DIRECT'
-    SessionId = 'session-123'
-    CreateUsb = $true
+    SessionId       = 'session-123'
+    CreateUsb       = $true
 }
 
 Assert-Equal 'UsbFromIso' $resolved.Mode 'Automation: CLI create USB request wins over interactive mode'
@@ -120,7 +120,7 @@ $sourceIds = Get-WfuSourceIds
 Assert-Equal 'WU_DIRECT' $sourceIds.DirectMetadata 'Automation: source IDs include WU_DIRECT'
 Assert-Equal 'LEGACY_MCT_X86' $sourceIds.LegacyMctX86 'Automation: source IDs include legacy MCT x86'
 
-$families = Get-WfuTargetFamilies -AvailableTargets @('W10_1507','21H2','W10_22H2','24H2')
+$families = Get-WfuTargetFamilies -AvailableTargets @('W10_1507', '21H2', 'W10_22H2', '24H2')
 Assert-Equal 2 $families['Windows 10'].Count 'Automation: Windows 10 family split'
 Assert-Equal 2 $families['Windows 11'].Count 'Automation: Windows 11 family split'
 
@@ -139,7 +139,8 @@ if ((Get-WfuNormalizedMode -Mode 'IsoDownload') -eq 'IsoDownload') {
     Assert-Equal 'AutomatedUpgrade' (Get-WfuNormalizedMode -Mode 'AutomatedUpgrade') 'Automation: new mode AutomatedUpgrade normalizes'
     Assert-Equal 'AutomatedUpgrade' (Get-WfuNormalizedMode -Mode 'headless') 'Automation: legacy headless alias maps forward'
     Assert-Equal 'UsbFromIso' (Get-WfuNormalizedMode -Mode 'createusb') 'Automation: legacy createusb alias maps forward'
-} else {
+}
+else {
     Skip-Test 'Automation: new mode normalization' 'Runtime does not yet expose the new mode names'
 }
 

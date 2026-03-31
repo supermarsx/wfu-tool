@@ -6,7 +6,8 @@ if (-not $isAdmin) {
     Skip-Test 'TLS: Repair-TlsConfiguration' 'Requires admin privileges'
     Skip-Test 'TLS: WinHTTP DefaultSecureProtocols' 'Requires admin privileges'
     Skip-Test 'TLS: .NET SchUseStrongCrypto' 'Requires admin privileges'
-} else {
+}
+else {
     # Run the fix
     Repair-TlsConfiguration
     Assert-True $true 'TLS: Repair-TlsConfiguration completed without error'

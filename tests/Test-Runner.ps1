@@ -32,7 +32,8 @@ $Script:MaxRetries = 1
 # Source the main script's functions
 try {
     . (Join-Path $projectRoot 'wfu-tool.ps1') -TargetVersion '25H2' -NoReboot -LogPath $Script:LogPath -DownloadPath $Script:DownloadPath -SkipBypasses -SkipBlockerRemoval -SkipTelemetry -SkipRepair -SkipCumulativeUpdates -SkipNetworkCheck -SkipDiskCheck -MaxRetries 1
-} catch {
+}
+catch {
     # Expected -- the script runs Start-UpgradeChain which may fail in test context
 }
 
@@ -49,7 +50,8 @@ function Assert-True {
     if ($Condition) {
         $Script:PassedTests++
         Write-Host "    PASS: $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $Script:FailedTests++
         $Script:FailedNames += $TestName
         Write-Host "    FAIL: $TestName" -ForegroundColor Red
@@ -62,7 +64,8 @@ function Assert-Equal {
     if ($Expected -eq $Actual) {
         $Script:PassedTests++
         Write-Host "    PASS: $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $Script:FailedTests++
         $Script:FailedNames += $TestName
         Write-Host "    FAIL: $TestName (expected '$Expected', got '$Actual')" -ForegroundColor Red
@@ -75,7 +78,8 @@ function Assert-NotNull {
     if ($null -ne $Value -and $Value -ne '') {
         $Script:PassedTests++
         Write-Host "    PASS: $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $Script:FailedTests++
         $Script:FailedNames += $TestName
         Write-Host "    FAIL: $TestName (value is null/empty)" -ForegroundColor Red
@@ -88,7 +92,8 @@ function Assert-Null {
     if ($null -eq $Value) {
         $Script:PassedTests++
         Write-Host "    PASS: $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $Script:FailedTests++
         $Script:FailedNames += $TestName
         Write-Host "    FAIL: $TestName (expected null, got '$Value')" -ForegroundColor Red
@@ -101,7 +106,8 @@ function Assert-Match {
     if ($Value -match $Pattern) {
         $Script:PassedTests++
         Write-Host "    PASS: $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $Script:FailedTests++
         $Script:FailedNames += $TestName
         Write-Host "    FAIL: $TestName ('$Value' does not match '$Pattern')" -ForegroundColor Red
@@ -123,15 +129,16 @@ if ($ExecutionContext.SessionState.Module) {
 # Find and run test files
 if ($Filter -eq '*') {
     $testPattern = $null
-} else {
+}
+else {
     $testPattern = "^Test-($Filter)$"
 }
 
 $testFiles = @(Get-ChildItem $testDir -Filter 'Test-*.ps1' | Where-Object {
-    $_.Name -ne 'Test-Runner.ps1' -and (
-        $null -eq $testPattern -or $_.BaseName -match $testPattern
-    )
-} | Sort-Object Name)
+        $_.Name -ne 'Test-Runner.ps1' -and (
+            $null -eq $testPattern -or $_.BaseName -match $testPattern
+        )
+    } | Sort-Object Name)
 Write-Host "  Found $($testFiles.Count) test file(s)" -ForegroundColor DarkGray
 Write-Host ''
 
@@ -140,7 +147,8 @@ foreach ($testFile in $testFiles) {
     Write-Host "  $('-' * 50)" -ForegroundColor DarkGray
     try {
         . $testFile.FullName
-    } catch {
+    }
+    catch {
         Write-Host "    ERROR: Test file threw exception: $_" -ForegroundColor Red
         $Script:FailedTests++
         $Script:FailedNames += "$($testFile.BaseName) (EXCEPTION)"

@@ -16,7 +16,8 @@ if ($releaseResult) {
     Assert-Match 'professional' $releaseResult.FileName 'DL-DirectMetadata: Filename contains edition'
     if ($releaseResult.Sha1) {
         Assert-Match '^[0-9a-f]{40}$' $releaseResult.Sha1 'DL-DirectMetadata: SHA1 is normalized to 40 hex chars'
-    } else {
+    }
+    else {
         Skip-Test 'DL-DirectMetadata: SHA1 digest' 'WU metadata did not expose a convertible SHA1 digest'
     }
 
@@ -24,10 +25,12 @@ if ($releaseResult) {
     try {
         $head = Invoke-WebRequest -Uri $releaseResult.Url -Method Head -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
         Assert-True ($head.StatusCode -eq 200) 'DL-DirectMetadata: CDN URL reachable'
-    } catch {
+    }
+    catch {
         Skip-Test 'DL-DirectMetadata: CDN reachability' "HEAD failed: $_"
     }
-} else {
+}
+else {
     Skip-Test 'DL-DirectMetadata: 25H2 ESD' 'Direct WU client unavailable'
 }
 
@@ -49,7 +52,7 @@ if ($legacySpec) {
         }
 
         Assert-True ($legacySources.Count -ge 1) "DL-LegacyMedia[$legacyTarget]: Has at least one source descriptor"
-        $legacyCatalog = $legacySources | Where-Object { $_.Kind -in @('CAB','XML') } | Select-Object -First 1
+        $legacyCatalog = $legacySources | Where-Object { $_.Kind -in @('CAB', 'XML') } | Select-Object -First 1
         $legacyMct = $legacySources | Where-Object { $_.Kind -eq 'MCTEXE' } | Select-Object -First 1
         if ($legacyCatalog) {
             Assert-Match '^https://' $legacyCatalog.Url "DL-LegacyMedia[$legacyTarget]: Catalog source is HTTPS"
@@ -68,10 +71,12 @@ if ($legacySpec) {
             Assert-NotNull $legacyPlan.WorkingDirectory "DL-LegacyMedia[$legacyTarget]: MCT plan has a working directory"
             Assert-True ($legacyPlan.OutputIsoPath -match "\\$legacyTarget\.iso$") "DL-LegacyMedia[$legacyTarget]: Output ISO path is versioned"
         }
-    } else {
+    }
+    else {
         Skip-Test "DL-LegacyMedia[$legacyTarget]: MCT fallback plan" 'Helper not surfaced in the current session'
     }
-} else {
+}
+else {
     Skip-Test 'DL-LegacyMedia: acquisition path' 'Legacy media manifest unavailable'
 }
 
@@ -91,10 +96,12 @@ if ($esdResult) {
     try {
         $head = Invoke-WebRequest -Uri $esdResult.Url -Method Head -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
         Assert-True ($head.StatusCode -eq 200) 'DL-ESD: CDN URL reachable'
-    } catch {
+    }
+    catch {
         Skip-Test 'DL-ESD: CDN reachability' "HEAD failed: $_"
     }
-} else {
+}
+else {
     Skip-Test 'DL-ESD: 23H2 catalog' 'Catalog download failed'
 }
 
@@ -112,7 +119,8 @@ if ($fidoResult) {
     Assert-Match '\.iso' $fidoResult 'DL-Fido: URL contains .iso'
     Assert-Match 'https://' $fidoResult 'DL-Fido: URL is HTTPS'
     Assert-Match 'microsoft' $fidoResult 'DL-Fido: URL is from Microsoft'
-} else {
+}
+else {
     Skip-Test 'DL-Fido: ISO URL' 'Sentinel blocked or API unavailable (known intermittent)'
 }
 
@@ -174,10 +182,12 @@ try {
     $mctResp = Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=2156295' `
         -Method Head -UseBasicParsing -TimeoutSec 10 -MaximumRedirection 0 -ErrorAction SilentlyContinue
     Assert-True $true 'DL-MCT: Download URL is reachable'
-} catch {
+}
+catch {
     if ($_.Exception.Response.StatusCode.value__ -in @(301, 302)) {
         Assert-True $true 'DL-MCT: Download URL redirects (reachable)'
-    } else {
+    }
+    else {
         Skip-Test 'DL-MCT: Availability' "Unreachable: $_"
     }
 }
@@ -190,10 +200,12 @@ try {
     $iaResp = Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=2171764' `
         -Method Head -UseBasicParsing -TimeoutSec 10 -MaximumRedirection 0 -ErrorAction SilentlyContinue
     Assert-True $true 'DL-IA: Download URL is reachable'
-} catch {
+}
+catch {
     if ($_.Exception.Response.StatusCode.value__ -in @(301, 302)) {
         Assert-True $true 'DL-IA: Download URL redirects (reachable)'
-    } else {
+    }
+    else {
         Skip-Test 'DL-IA: Availability' "Unreachable: $_"
     }
 }

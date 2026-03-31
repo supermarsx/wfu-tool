@@ -6,7 +6,8 @@ Assert-True ($networkOk -is [bool]) 'Network: Returns a boolean'
 # If we have internet, it should pass (we can't guarantee this in all environments)
 if ($networkOk) {
     Assert-True $true 'Network: Connectivity check passed'
-} else {
+}
+else {
     Skip-Test 'Network: Connectivity check' 'No internet access'
 }
 

@@ -49,16 +49,19 @@ if ($versions.Count -gt 0) {
             Assert-True ($legacyItem.Build -gt 10000) "RemoteVer[$legacyVersion]: Build $($legacyItem.Build) > 10000"
             if ($legacyItem.PSObject.Properties.Name -contains 'SourceFamily') {
                 Assert-NotNull $legacyItem.SourceFamily "RemoteVer[$legacyVersion]: Has a source family"
-            } else {
+            }
+            else {
                 Skip-Test "RemoteVer[$legacyVersion]: Source family" 'SourceFamily is not surfaced by the current discovery shape'
             }
             if ($legacyItem.PSObject.Properties.Name -contains 'DiscoverySource') {
                 Assert-True ($legacyItem.DiscoverySource -match 'Pinned|Manifest|Legacy') "RemoteVer[$legacyVersion]: Uses pinned legacy discovery"
-            } else {
+            }
+            else {
                 Skip-Test "RemoteVer[$legacyVersion]: Discovery source" 'DiscoverySource is not surfaced by the current discovery shape'
             }
         }
     }
-} else {
+}
+else {
     Skip-Test 'RemoteVer: Discovery' 'No internet or all APIs rate-limited'
 }

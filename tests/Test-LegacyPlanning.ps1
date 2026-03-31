@@ -11,7 +11,8 @@ $legacyTargets = @(
 $probe = $null
 try {
     $probe = Get-WindowsFeatureTargetSpec -TargetVersion 'W10_1507'
-} catch {
+}
+catch {
     $probe = $null
 }
 
@@ -24,7 +25,8 @@ foreach ($target in $legacyTargets) {
     $spec = $null
     try {
         $spec = Get-WindowsFeatureTargetSpec -TargetVersion $target
-    } catch {
+    }
+    catch {
         $spec = $null
     }
 

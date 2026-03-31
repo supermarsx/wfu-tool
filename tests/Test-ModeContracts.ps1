@@ -43,7 +43,8 @@ function Invoke-WfuModeValidation {
 
     try {
         return & $cmd.Name -Options $Options
-    } catch {
+    }
+    catch {
         return @($_)
     }
 }
@@ -102,26 +103,27 @@ function New-WfuModeIni {
 $validationCommand = Get-WfuFirstCommand -Candidates @('Test-WfuModeRequirements', 'Test-WfuAutomationRequirements', 'Test-WfuHeadlessRequirements')
 if (-not $validationCommand) {
     Skip-Test 'Mode contracts: validation helper' 'No validation helper is exposed yet'
-} else {
+}
+else {
     $isoValidation = Invoke-WfuModeValidation -Options ([ordered]@{
-        Mode = 'IsoDownload'
-        TargetVersion = $null
-        DownloadPath = $tempRoot
-    })
+            Mode          = 'IsoDownload'
+            TargetVersion = $null
+            DownloadPath  = $tempRoot
+        })
     Assert-True (@($isoValidation).Count -gt 0) 'Mode contracts: IsoDownload requires a target version'
 
     $usbValidation = Invoke-WfuModeValidation -Options ([ordered]@{
-        Mode = 'UsbFromIso'
-        TargetVersion = '24H2'
-        DownloadPath = $tempRoot
-    })
+            Mode          = 'UsbFromIso'
+            TargetVersion = '24H2'
+            DownloadPath  = $tempRoot
+        })
     Assert-True (@($usbValidation).Count -gt 0) 'Mode contracts: UsbFromIso requires a USB target'
 }
 
 $resolvedIsoPath = Join-Path $tempRoot 'isodownload.ini'
 New-WfuModeIni -Path $resolvedIsoPath -Mode 'IsoDownload' -ExtraGeneral @{
     target_version = '24H2'
-    download_path = $tempRoot
+    download_path  = $tempRoot
 }
 $resolvedIso = New-WfuResolvedOptions -ConfigPath $resolvedIsoPath -CliOptions @{}
 Assert-Equal 'IsoDownload' $resolvedIso.Mode 'Mode contracts: IsoDownload resolves from INI'
@@ -129,11 +131,11 @@ Assert-Equal 'IsoDownload' $resolvedIso.Mode 'Mode contracts: IsoDownload resolv
 $resolvedUsbPath = Join-Path $tempRoot 'usbfromiso.ini'
 New-WfuModeIni -Path $resolvedUsbPath -Mode 'UsbFromIso' -ExtraGeneral @{
     target_version = '24H2'
-    download_path = $tempRoot
+    download_path  = $tempRoot
 } -ExtraUsb @{
-    create_usb = 'true'
-    disk_number = '3'
-    keep_iso = 'true'
+    create_usb      = 'true'
+    disk_number     = '3'
+    keep_iso        = 'true'
     partition_style = 'gpt'
 }
 $resolvedUsb = New-WfuResolvedOptions -ConfigPath $resolvedUsbPath -CliOptions @{}
@@ -144,7 +146,7 @@ Assert-Equal 3 $resolvedUsb.UsbDiskNumber 'Mode contracts: UsbFromIso keeps the 
 $resolvedAutoPath = Join-Path $tempRoot 'automatedupgrade.ini'
 New-WfuModeIni -Path $resolvedAutoPath -Mode 'AutomatedUpgrade' -ExtraGeneral @{
     target_version = '24H2'
-    download_path = $tempRoot
+    download_path  = $tempRoot
 }
 $resolvedAuto = New-WfuResolvedOptions -ConfigPath $resolvedAutoPath -CliOptions @{}
 Assert-Equal 'AutomatedUpgrade' $resolvedAuto.Mode 'Mode contracts: AutomatedUpgrade resolves from INI'
@@ -152,7 +154,7 @@ Assert-Equal 'AutomatedUpgrade' $resolvedAuto.Mode 'Mode contracts: AutomatedUpg
 $legacyHeadlessPath = Join-Path $tempRoot 'legacy-headless.ini'
 New-WfuModeIni -Path $legacyHeadlessPath -Mode 'headless' -ExtraGeneral @{
     target_version = '24H2'
-    download_path = $tempRoot
+    download_path  = $tempRoot
 }
 $legacyHeadless = New-WfuResolvedOptions -ConfigPath $legacyHeadlessPath -CliOptions @{}
 Assert-Equal 'AutomatedUpgrade' $legacyHeadless.Mode 'Mode contracts: legacy headless alias maps forward'
@@ -160,9 +162,9 @@ Assert-Equal 'AutomatedUpgrade' $legacyHeadless.Mode 'Mode contracts: legacy hea
 $legacyCreateUsbPath = Join-Path $tempRoot 'legacy-createusb.ini'
 New-WfuModeIni -Path $legacyCreateUsbPath -Mode 'createusb' -ExtraGeneral @{
     target_version = '24H2'
-    download_path = $tempRoot
+    download_path  = $tempRoot
 } -ExtraUsb @{
-    create_usb = 'true'
+    create_usb  = 'true'
     disk_number = '3'
 }
 $legacyCreateUsb = New-WfuResolvedOptions -ConfigPath $legacyCreateUsbPath -CliOptions @{}
@@ -178,7 +180,8 @@ $templateCommand = Get-WfuFirstCommand -Candidates @(
 
 if (-not $templateCommand) {
     Skip-Test 'Mode contracts: minimal INI template' 'No default-template helper is exposed yet'
-} else {
+}
+else {
     $templatePath = Join-Path $tempRoot 'default-template.ini'
     $templateArgs = @{}
 

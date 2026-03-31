@@ -18,13 +18,14 @@ function Invoke-LegacySourceCommand {
     param($Cmd)
 
     foreach ($args in @(
-        @(),
-        @('-Version', 'W10_1507'),
-        @('-TargetVersion', 'W10_1507')
-    )) {
+            @(),
+            @('-Version', 'W10_1507'),
+            @('-TargetVersion', 'W10_1507')
+        )) {
         try {
             return & $Cmd.Name @args
-        } catch {
+        }
+        catch {
             continue
         }
     }

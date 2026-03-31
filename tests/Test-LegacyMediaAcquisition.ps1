@@ -34,7 +34,7 @@ foreach ($version in $legacyVersions) {
 
     if ($catalogSource) {
         Assert-Match '^https://' $catalogSource.Url "LegacyAcquire[$version]: catalog source uses HTTPS"
-        Assert-True ($catalogSource.Architecture -in @('neutral','x64')) "LegacyAcquire[$version]: catalog source has normalized architecture"
+        Assert-True ($catalogSource.Architecture -in @('neutral', 'x64')) "LegacyAcquire[$version]: catalog source has normalized architecture"
     }
 
     if ($mctSource) {
@@ -50,11 +50,12 @@ foreach ($version in $legacyVersions) {
             Assert-NotNull $plan.CommandLine "LegacyAcquire[$version]: MCT plan has command line"
             Assert-NotNull $plan.WorkingDirectory "LegacyAcquire[$version]: MCT plan has working directory"
             Assert-True ($plan.OutputIsoPath -match "\\$version\.iso$") "LegacyAcquire[$version]: output ISO path is versioned"
-            if ($version -in @('W10_1507','W10_1511','W10_1607','W10_1703','W10_1709','W10_1803','W10_1809')) {
+            if ($version -in @('W10_1507', 'W10_1511', 'W10_1607', 'W10_1703', 'W10_1709', 'W10_1803', 'W10_1809')) {
                 Assert-True ($plan.SupportsMediaEdition -eq $false) "LegacyAcquire[$version]: old releases do not force MediaEdition arg"
             }
         }
-    } else {
+    }
+    else {
         Skip-Test "LegacyAcquire[$version]: MCT fallback plan" 'Helper not surfaced in the current session'
     }
 }
