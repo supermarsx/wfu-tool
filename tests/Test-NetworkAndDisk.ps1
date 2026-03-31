@@ -21,7 +21,8 @@ Assert-True ($diskOk -eq $true) 'DiskSpace: 1 GB should always be available'
 # which is slow and noisy in CI.
 if ($env:WFU_TOOL_TEST_MODE -eq '1' -or $env:CI) {
     Skip-Test 'DiskSpace: 99999 GB should always fail' 'Skipped in CI/test mode to avoid slow cleanup path'
-} else {
+}
+else {
     $diskHigh = Test-DiskSpace -RequiredGB 99999
     Assert-True ($diskHigh -eq $false) 'DiskSpace: 99999 GB should always fail'
 }
