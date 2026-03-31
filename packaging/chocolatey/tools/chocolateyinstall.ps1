@@ -39,7 +39,8 @@ try {
     }
     New-Item -ItemType Directory -Force -Path $installDir | Out-Null
     Expand-Archive -Path $archivePath -DestinationPath $installDir -Force
-} finally {
+}
+finally {
     Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
