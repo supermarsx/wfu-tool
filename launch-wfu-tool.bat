@@ -12,24 +12,21 @@ if %errorlevel% neq 0 (
     echo.
     echo   Requesting administrator privileges...
     echo.
-    set "VBS=%TEMP%\wfu-tool-elevate.vbs"
-    >"!VBS!" (
-        echo Set UAC = CreateObject^("Shell.Application"^)
-        echo scriptDir = WScript.Arguments(0)
-        echo batPath = scriptDir ^& "\launch-wfu-tool.bat"
-        echo argString = ""
-        echo For i = 1 To WScript.Arguments.Count - 1
-        echo     arg = WScript.Arguments(i)
-        echo     If Len(argString) ^> 0 Then argString = argString ^& " "
-        echo     arg = Replace(arg, """", """""")
-        echo     argString = argString ^& """" ^& arg ^& """"
-        echo Next
-        echo command = "/k cd /d " ^& Chr(34) ^& scriptDir ^& Chr(34) ^& " && " ^& Chr(34) ^& batPath ^& Chr(34)
-        echo If Len(argString) ^> 0 Then command = command ^& " " ^& argString
-        echo UAC.ShellExecute "cmd.exe", command, "", "runas", 1
+    set "WFU_ELEVATE_SCRIPT_DIR=%SCRIPT_DIR%"
+    set "WFU_ELEVATE_ARGS=%*"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $scriptDir = $env:WFU_ELEVATE_SCRIPT_DIR; $batPath = Join-Path $scriptDir 'launch-wfu-tool.bat'; $argText = $env:WFU_ELEVATE_ARGS; if ([string]::IsNullOrWhiteSpace($argText)) { Start-Process -FilePath $batPath -WorkingDirectory $scriptDir -Verb RunAs | Out-Null } else { Start-Process -FilePath $batPath -WorkingDirectory $scriptDir -ArgumentList $argText -Verb RunAs | Out-Null }"
+    set "ELEVATE_EXIT=!errorlevel!"
+    set "WFU_ELEVATE_SCRIPT_DIR="
+    set "WFU_ELEVATE_ARGS="
+    if not "!ELEVATE_EXIT!"=="0" (
+        color 0E
+        echo.
+        echo   Elevation was cancelled or failed.
+        echo   Accept the UAC prompt or run this launcher from an elevated terminal.
+        echo.
+        echo   Press any key to close this window...
+        pause ^>nul
     )
-    cscript //nologo "!VBS!" "%SCRIPT_DIR%" %*
-    del /q "!VBS!" 2>nul
     exit /b
 )
 
